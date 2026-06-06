@@ -8,6 +8,7 @@ import { GearAdvisor } from "./GearAdvisor";
 import { MarketTax } from "./MarketTax";
 import { MarketBoard } from "./MarketBoard";
 import { DailyChecklist } from "./DailyChecklist";
+import { InfoTip } from "./InfoTip";
 import {
   FoodReminder,
   GilWarnings,
@@ -160,6 +161,10 @@ export function Dashboard({
     <div className="space-y-5">
       {/* search bar */}
       <div className="glass p-4">
+        <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-lavender-500/70 dark:text-lavender-300/60">
+          Find what you need
+          <InfoTip text="Type what you're after (gear, roulette, food, gil, mounts…) to jump straight to it, or use the tabs below. New here? Try the quick questions." />
+        </div>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">
             🔎

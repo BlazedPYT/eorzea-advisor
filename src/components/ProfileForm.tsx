@@ -13,6 +13,7 @@ import type {
 import { JobSelector } from "./JobSelector";
 import { LevelSelector } from "./LevelSelector";
 import { Autocomplete, type SuggestItem } from "./Autocomplete";
+import { InfoTip } from "./InfoTip";
 import { ALL_SLOTS, SLOT_LABEL } from "@/lib/gear";
 import { getJob } from "@/lib/jobs";
 
@@ -201,7 +202,10 @@ export function ProfileForm({
       {/* identity */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2">
-          <label className="label">Character name</label>
+          <label className="label">
+            Character name{" "}
+            <InfoTip text="Type your in-game character name. We search the Lodestone live as you type — pick yourself from the list and we'll auto-load your job, level and gear. (Set your World first for the best matches.)" />
+          </label>
           <Autocomplete
             value={p.characterName}
             onChange={(v) => set("characterName", v)}
@@ -217,7 +221,10 @@ export function ProfileForm({
           </p>
         </div>
         <div>
-          <label className="label">World / server</label>
+          <label className="label">
+            World / server{" "}
+            <InfoTip text="Your home World (e.g. Gilgamesh). Start typing and pick from the list. We use your World's Data Center to find the cheapest cross-world Market Board prices." />
+          </label>
           <Autocomplete
             value={p.world}
             onChange={(v) => set("world", v)}
@@ -227,7 +234,10 @@ export function ProfileForm({
           />
         </div>
         <div>
-          <label className="label">Current gil</label>
+          <label className="label">
+            Current gil{" "}
+            <InfoTip text="How much gil (the game's currency) you have. Check it at the bottom of your inventory window in-game. We use this to flag when something is too expensive for you." />
+          </label>
           <input
             inputMode="numeric"
             className="field"
@@ -244,7 +254,10 @@ export function ProfileForm({
       {/* job + level */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="glass !rounded-2xl !bg-white/40 p-4 dark:!bg-white/[0.03]">
-          <label className="label">Combat job / class</label>
+          <label className="label">
+            Combat job / class{" "}
+            <InfoTip text="The job you want advice for. In FFXIV one character can be every job — switch by equipping that job's weapon/soul crystal. Pick the one you're leveling now; all advice retargets to it." />
+          </label>
           <JobSelector value={p.job} onChange={(id) => set("job", id)} />
           {job.startingLevel > p.level && (
             <p className="mt-2 text-xs font-semibold text-rose-500">
@@ -253,7 +266,10 @@ export function ProfileForm({
           )}
         </div>
         <div className="glass !rounded-2xl !bg-white/40 p-4 dark:!bg-white/[0.03]">
-          <label className="label">Current level</label>
+          <label className="label">
+            This job's level{" "}
+            <InfoTip text="The level of the job selected above (1–100), not your character's highest. Each job levels separately. Drag the slider or tap a milestone. The colored label shows your gearing bracket." />
+          </label>
           <LevelSelector value={p.level} onChange={(l) => set("level", l)} />
         </div>
       </div>
@@ -261,7 +277,10 @@ export function ProfileForm({
       {/* story / goal / playstyle */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label className="label">Expansion access</label>
+          <label className="label">
+            Expansion access{" "}
+            <InfoTip text="The latest expansion you own (A Realm Reborn → Dawntrail). This caps how high you can level and which content exists for you." />
+          </label>
           <select
             className="field"
             value={p.expansion}
@@ -273,7 +292,10 @@ export function ProfileForm({
           </select>
         </div>
         <div>
-          <label className="label">MSQ / story status</label>
+          <label className="label">
+            MSQ / story status{" "}
+            <InfoTip text="How far you are in the Main Scenario Quest — and whether you used a story 'skip' (a paid jump). This matters: a skip can unlock content your job is too low to do, so we tailor advice around that." />
+          </label>
           <select
             className="field"
             value={p.msqStatus}
@@ -291,7 +313,10 @@ export function ProfileForm({
           </select>
         </div>
         <div>
-          <label className="label">Goal</label>
+          <label className="label">
+            Goal{" "}
+            <InfoTip text="What you want help with right now. Your dashboard opens focused on this — e.g. Speed Leveling jumps to dailies/route, Gear Upgrade opens the gear advisor." />
+          </label>
           <select
             className="field"
             value={p.goal}
@@ -305,7 +330,10 @@ export function ProfileForm({
           </select>
         </div>
         <div>
-          <label className="label">Preferred playstyle</label>
+          <label className="label">
+            Preferred playstyle{" "}
+            <InfoTip text="How you like to play — tunes the tips. e.g. 'Safe healer/tank practice' adds gentle pointers; 'DPS queue optimization' reminds you to stack queues since DPS waits are longest." />
+          </label>
           <select
             className="field"
             value={p.playstyle}

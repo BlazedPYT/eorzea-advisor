@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CharacterProfile, GearItem, GearRecommendation } from "@/lib/types";
 import { GearSlotCard } from "./GearSlotCard";
+import { InfoTip } from "./InfoTip";
 
 function SkeletonCard() {
   return (
@@ -53,7 +54,10 @@ export function GearAdvisor({
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="section-title">🛡️ Gear recommendations</h3>
+        <h3 className="section-title">
+          🛡️ Gear recommendations
+          <InfoTip text="A recommended item for each of your 11 gear slots, with a live Market Board price and a Buy / Skip / Replace-soon label. 'Better from Poetics/dungeon' means don't spend gil — get it free in-game. Tap 'View live listings' to see prices without leaving the app." />
+        </h3>
         <span className="text-xs text-slate-400">
           live Market Board pricing · {profile.world || "Aether"}
         </span>

@@ -13,6 +13,7 @@ import {
   nextWeeklyReset,
   formatCountdown,
 } from "@/lib/resets";
+import { InfoTip } from "./InfoTip";
 
 interface Task {
   id: string;
@@ -117,7 +118,10 @@ export function DailyChecklist({
 
   return (
     <section className="space-y-3">
-      <h3 className="section-title">✅ Daily &amp; weekly checklist</h3>
+      <h3 className="section-title">
+        ✅ Daily &amp; weekly checklist
+        <InfoTip text="Tick off your routine tasks. The boxes auto-clear at the FFXIV reset (daily 15:00 UTC, weekly Tuesday 08:00 UTC) and the countdown shows time left. Your ticks are saved on this device." />
+      </h3>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ChecklistCard

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { TaxRates } from "@/lib/types";
+import { InfoTip } from "./InfoTip";
 
 const CITY_EMOJI: Record<string, string> = {
   "Limsa Lominsa": "⚓",
@@ -39,7 +40,10 @@ export function MarketTax({ world }: { world: string }) {
 
   return (
     <section className="space-y-3">
-      <h3 className="section-title">👺 Live Market Board tax (goblin tax)</h3>
+      <h3 className="section-title">
+        👺 Live Market Board tax (goblin tax)
+        <InfoTip text="When you SELL on the Market Board, the retainer's city takes a cut as tax. These are live rates — list your items via a retainer in the lowest-tax city (highlighted green) to keep more gil." />
+      </h3>
       <div className="glass p-4">
         <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
           Every Market Board sale is taxed by the retainer city. Live rates on{" "}

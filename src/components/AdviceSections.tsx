@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { AdvisorResult } from "@/lib/types";
 import { useMarket } from "./MarketModal";
+import { InfoTip } from "./InfoTip";
 
 const PRIORITY_STYLE: Record<string, string> = {
   PRIMARY: "bg-emerald-100 text-emerald-700 ring-emerald-200",
@@ -33,7 +34,10 @@ function Card({
 export function QueueAdvisor({ queue }: { queue: AdvisorResult["queue"] }) {
   return (
     <section className="space-y-3">
-      <h3 className="section-title">🎲 Queue recommendations</h3>
+      <h3 className="section-title">
+        🎲 Queue recommendations
+        <InfoTip text="What to queue from the Duty Finder for the fastest EXP. Always do your Daily Leveling Roulette first, then spam the highest dungeon. Open the Duty Finder in-game with the blue cross-shaped icon, or press the Duty menu." />
+      </h3>
       <div className="grid gap-3 sm:grid-cols-2">
         {queue.map((q, i) => (
           <Card key={i} delay={i * 0.04}>
@@ -69,7 +73,10 @@ export function LevelingRoute({ route }: { route: AdvisorResult["route"] }) {
   if (!route.length) return null;
   return (
     <section className="space-y-3">
-      <h3 className="section-title">🗺️ Leveling route</h3>
+      <h3 className="section-title">
+        🗺️ Leveling route
+        <InfoTip text="The dungeons to run in order as you level up. ✓ means you've out-leveled it. Each unlocks from its level — pick it up from the quest NPC, then it appears in the Duty Finder." />
+      </h3>
       <div className="glass p-4">
         <ol className="relative space-y-3 border-l-2 border-lavender-200/70 pl-5 dark:border-white/10">
           {route.map((step, i) => (
@@ -119,7 +126,10 @@ export function FoodReminder({ food }: { food: AdvisorResult["food"] }) {
   const market = useMarket();
   return (
     <section className="space-y-3">
-      <h3 className="section-title">🍳 Food buff reminder</h3>
+      <h3 className="section-title">
+        🍳 Food buff reminder
+        <InfoTip text="Eating food gives a +3% EXP 'Well Fed' buff for 30 minutes. While leveling, the exact food barely matters — just keep it active. Tap any food to see live prices. Right-click food in your inventory to eat it." />
+      </h3>
       <div className="glass p-4">
         <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
           While leveling, the exact food stats barely matter — just{" "}
@@ -161,7 +171,10 @@ const SEVERITY_STYLE: Record<string, string> = {
 export function GilWarnings({ warnings }: { warnings: AdvisorResult["gilWarnings"] }) {
   return (
     <section className="space-y-3">
-      <h3 className="section-title">🪙 Gil-saving warnings</h3>
+      <h3 className="section-title">
+        🪙 Gil-saving warnings
+        <InfoTip text="Common ways new players waste gil — and what to do instead. The golden rule while leveling: don't buy gear you'll replace in a few levels; take dungeon drops and tomestone gear instead." />
+      </h3>
       <div className="grid gap-2 sm:grid-cols-2">
         {warnings.map((w, i) => (
           <Card key={i} delay={i * 0.04}>
@@ -185,7 +198,10 @@ const TAG_EMOJI: Record<string, string> = { GLAM: "✨", MOUNT: "🐎", FLEX: "�
 export function LuxurySuggestions({ luxury }: { luxury: AdvisorResult["luxury"] }) {
   return (
     <section className="space-y-3">
-      <h3 className="section-title">💎 Luxury · glam · mount</h3>
+      <h3 className="section-title">
+        💎 Luxury · glam · mount
+        <InfoTip text="Fun ways to spend gil once you're comfortable: glamour (cosmetic gear looks via the Glamour Dresser), dyes, mounts and minions. None of this affects power — it's pure self-expression." />
+      </h3>
       <div className="grid gap-3 sm:grid-cols-3">
         {luxury.map((l, i) => (
           <Card key={i} delay={i * 0.04}>

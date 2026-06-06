@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eorzea Advisor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --lav: #a78bea;
+        --lav2: #8b66e0;
+        --gold: #eec45c;
+        --ink: #ece9f7;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; overflow: hidden; }
+      body {
+        font-family: "Nunito", system-ui, sans-serif;
+        color: var(--ink);
+        background: #14121f;
+        display: grid;
+        place-items: center;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      /* aurora backdrop */
+      .aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+      .aurora::before, .aurora::after {
+        content: ""; position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.55;
+      }
+      .aurora::before {
+        width: 620px; height: 620px; left: -120px; top: -160px;
+        background: radial-gradient(circle, rgba(167,139,234,0.8), transparent 60%);
+        animation: drift1 14s ease-in-out infinite;
+      }
+      .aurora::after {
+        width: 560px; height: 560px; right: -120px; bottom: -160px;
+        background: radial-gradient(circle, rgba(120,160,255,0.7), transparent 60%);
+        animation: drift2 16s ease-in-out infinite;
+      }
+      .glow-gold {
+        position: fixed; width: 420px; height: 420px; border-radius: 50%; filter: blur(90px);
+        background: radial-gradient(circle, rgba(238,196,92,0.35), transparent 60%);
+        left: 50%; top: 70%; transform: translate(-50%,-50%); z-index: 0;
+        animation: pulse 8s ease-in-out infinite;
+      }
+      @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(60px,40px)} }
+      @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-50px,-30px)} }
+      @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:.6} }
+      @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+      .card {
+        position: relative; z-index: 1; width: min(440px, 90vw);
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 32px; padding: 34px 30px 26px;
+        box-shadow: 0 30px 80px -20px rgba(0,0,0,0.6);
+        backdrop-filter: blur(20px);
+        text-align: center;
+        animation: fadeUp .5s ease both;
+      }
+      .mascot { width: 104px; height: 104px; margin: 0 auto 6px; animation: floaty 4s ease-in-out infinite; }
+      h1 {
+        font-family: "Quicksand", sans-serif; font-weight: 700; font-size: 30px; letter-spacing: .3px;
+        background: linear-gradient(90deg, #e9deff, #fff, #ffe9b8);
+        -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      }
+      .tag { color: #c9bdf0; font-size: 13px; margin-top: 4px; }
+      .founder { color: #9a8fc4; font-size: 11px; margin-top: 10px; letter-spacing: .4px; }
+      .founder b { color: var(--gold); }
+
+      .btns { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
+      button {
+        font-family: inherit; cursor: pointer; border: none; border-radius: 16px;
+        font-weight: 700; font-size: 15px; padding: 14px; transition: all .18s ease;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      }
+      button:active { transform: scale(.98); }
+      .primary {
+        background: linear-gradient(90deg, var(--lav2), var(--lav));
+        color: #fff; box-shadow: 0 12px 30px -8px rgba(139,102,224,0.7);
+      }
+      .primary:hover { filter: brightness(1.08); }
+      .primary:disabled { opacity: .6; cursor: progress; }
+      .row { display: flex; gap: 10px; }
+      .ghost {
+        flex: 1; background: rgba(255,255,255,0.08); color: var(--ink);
+        border: 1px solid rgba(255,255,255,0.12);
+      }
+      .ghost:hover { background: rgba(255,255,255,0.16); }
+
+      .status {
+        margin-top: 16px; min-height: 20px; font-size: 12px; color: #b9aee0;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #f5c451; box-shadow: 0 0 10px #f5c451; }
+      .dot.ready { background: #5fe39a; box-shadow: 0 0 10px #5fe39a; }
+      .spinner {
+        width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3);
+        border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite;
+      }
+
+      /* update bar */
+      .update {
+        margin-top: 14px; border-radius: 16px; padding: 12px 14px; display: none;
+        background: rgba(95,227,154,0.12); border: 1px solid rgba(95,227,154,0.3);
+      }
+      .update.show { display: block; animation: fadeUp .3s ease both; }
+      .update .u-title { font-weight: 700; font-size: 13px; }
+      .progress { height: 6px; border-radius: 99px; background: rgba(255,255,255,.15); margin-top: 8px; overflow: hidden; }
+      .progress > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--lav), #5fe39a); transition: width .2s; }
+      .ver { position: fixed; bottom: 12px; right: 16px; z-index:1; font-size: 11px; color: #6f6594; }
+    </style>
+  </head>
+  <body>
+    <div class="aurora"></div>
+    <div class="glow-gold"></div>
+
+    <div class="card">
+      <svg class="mascot" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="b" cx="50%" cy="36%" r="70%">
+            <stop offset="0%" stop-color="#fbf9ff" /><stop offset="100%" stop-color="#c4b5f0" />
+          </radialGradient>
+          <radialGradient id="p" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#fff3c9" /><stop offset="100%" stop-color="#eec45c" />
+          </radialGradient>
+        </defs>
+        <path d="M50 26 C50 14 56 10 60 7" stroke="#a78bea" stroke-width="3" stroke-linecap="round" />
+        <circle cx="62" cy="6" r="7" fill="url(#p)" />
+        <ellipse cx="22" cy="48" rx="9" ry="13" fill="#c4b5f0" transform="rotate(-18 22 48)" />
+        <ellipse cx="78" cy="48" rx="9" ry="13" fill="#c4b5f0" transform="rotate(18 78 48)" />
+        <ellipse cx="50" cy="58" rx="34" ry="32" fill="url(#b)" />
+        <circle cx="34" cy="64" r="5" fill="#f7c6d9" opacity=".7" />
+        <circle cx="66" cy="64" r="5" fill="#f7c6d9" opacity=".7" />
+        <circle cx="40" cy="54" r="5.5" fill="#3a3357" /><circle cx="60" cy="54" r="5.5" fill="#3a3357" />
+        <circle cx="42" cy="52" r="1.8" fill="#fff" /><circle cx="62" cy="52" r="1.8" fill="#fff" />
+        <path d="M44 66 Q50 72 56 66" stroke="#3a3357" stroke-width="2.5" stroke-linecap="round" />
+      </svg>
+
+      <h1>Eorzea Advisor</h1>
+      <div class="tag">your cozy FFXIV companion · any job · any level</div>
+      <div class="founder">Created by <b>Daniel Cody</b> · Founder</div>
+
+      <div class="btns">
+        <button class="primary" id="start">▶ &nbsp;Start Eorzea Advisor</button>
+        <div class="row">
+          <button class="ghost" id="check">🔄 Check for updates</button>
+          <button class="ghost" id="quit">✕ Quit</button>
+        </div>
+      </div>
+
+      <div class="status" id="status">
+        <span class="dot" id="dot"></span><span id="statusText">Warming up the aetheryte…</span>
+      </div>
+
+      <div class="update" id="update">
+        <div class="u-title" id="uTitle">Update available</div>
+        <div class="progress"><div id="uBar"></div></div>
+        <button class="primary" id="install" style="margin-top:10px; display:none;">
+          ⬇ Update &amp; restart
+        </button>
+      </div>
+    </div>
+
+    <div class="ver" id="ver"></div>
+
+    <script>
+      const E = window.eorzea;
+      const $ = (id) => document.getElementById(id);
+      let serverReady = false;
+
+      // Populate version + founder.
+      (async () => {
+        if (!E) {
+          $("statusText").textContent = "Running outside the desktop app.";
+          return;
+        }
+        try {
+          const info = await E.getInfo();
+          $("ver").textContent = "v" + info.version + (info.dev ? " (dev)" : "");
+        } catch {}
+      })();
+
+      function setReady(ok) {
+        serverReady = ok;
+        $("dot").classList.toggle("ready", ok);
+        $("statusText").textContent = ok ? "Ready to go!" : "Warming up the aetheryte…";
+      }
+
+      if (E) {
+        E.onServerStatus((d) => setReady(!!d.ready));
+
+        // Update lifecycle → reflected in the launcher.
+        E.onUpdateChecking(() => {
+          $("update").classList.add("show");
+          $("uTitle").textContent = "Checking for updates…";
+        });
+        E.onUpdateNone(() => {
+          $("uTitle").textContent = "You're on the latest version ✓";
+          setTimeout(() => $("update").classList.remove("show"), 2500);
+        });
+        E.onUpdateAvailable((d) => {
+          $("update").classList.add("show");
+          $("uTitle").textContent = "Downloading update v" + (d.version || "") + "…";
+        });
+        E.onUpdateProgress((d) => {
+          $("update").classList.add("show");
+          $("uBar").style.width = (d.percent || 0) + "%";
+        });
+        E.onUpdateDownloaded((d) => {
+          $("update").classList.add("show");
+          $("uTitle").textContent = "Update v" + (d.version || "") + " ready!";
+          $("uBar").style.width = "100%";
+          $("install").style.display = "inline-flex";
+        });
+        E.onUpdateError(() => {
+          $("uTitle").textContent = "Couldn't check updates (offline?)";
+        });
+      }
+
+      $("start").addEventListener("click", async () => {
+        const btn = $("start");
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> &nbsp;Entering Eorzea…';
+        $("statusText").textContent = serverReady
+          ? "Opening your dashboard…"
+          : "Almost there…";
+        try {
+          await E.launchApp(); // resolves when server ready, then loads the app
+        } catch {
+          btn.disabled = false;
+          btn.textContent = "▶  Start Eorzea Advisor";
+          $("statusText").textContent = "Something hiccuped — try again.";
+        }
+      });
+
+      $("check").addEventListener("click", () => E && E.checkForUpdates());
+      $("quit").addEventListener("click", () => E && E.quit());
+      $("install").addEventListener("click", () => E && E.installUpdate());
+    </script>
+  </body>
+</html>

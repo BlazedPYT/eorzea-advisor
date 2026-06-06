@@ -28,6 +28,10 @@ const EMPTY_PROFILE: CharacterProfile = {
 };
 
 export default function Home() {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    setIsDesktop(typeof window !== "undefined" && !!(window as any).eorzea?.isDesktop);
+  }, []);
   const [profile, setProfile] = useState<CharacterProfile | null>(null);
   const [gear, setGear] = useState<GearItem[]>([]);
   const [initialGear, setInitialGear] = useState<GearSnapshotData | null>(null);
@@ -105,6 +109,15 @@ export default function Home() {
           <button className="btn-ghost" onClick={loadDemo} title="Load the Scholar 54 demo">
             🎀 Demo
           </button>
+          {isDesktop && (
+            <button
+              className="btn-ghost"
+              onClick={() => (window as any).eorzea?.goLauncher?.()}
+              title="Back to the launcher"
+            >
+              ⌂ Launcher
+            </button>
+          )}
           <ThemeToggle />
         </div>
       </header>
@@ -185,14 +198,17 @@ export default function Home() {
       </AnimatePresence>
 
       <footer className="mt-16 border-t border-lavender-200/50 pt-6 text-center text-xs text-slate-400 dark:border-white/10">
-        <p>
-          Eorzea Advisor reads only public Lodestone pages, XIVAPI static game data,
-          and Universalis market prices. No plugins, no memory readers — fully within
-          the FFXIV third-party tool policy. Gear snapshots may be delayed.
+        <p className="font-display text-sm font-bold text-lavender-600 dark:text-lavender-300">
+          Eorzea Advisor — created by Daniel Cody · Founder 💜
+        </p>
+        <p className="mt-2">
+          Reads only public Lodestone pages, XIVAPI static game data, and Universalis
+          market prices. No plugins, no memory readers — fully within the FFXIV
+          third-party tool policy. Gear snapshots may be delayed.
         </p>
         <p className="mt-1">
           Not affiliated with Square Enix. FINAL FANTASY XIV © SQUARE ENIX. Mascot
-          “Gilbo” is original art. Made with 💜 for adventurers.
+          “Gilbo” is original art.
         </p>
       </footer>
     </main>

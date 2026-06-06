@@ -62,18 +62,70 @@ async function search(query: string, fields: string, limit = 50): Promise<Search
   return (await res.json()) as SearchResult;
 }
 
-/** Free-text item search for the in-app Market Board (returns several matches). */
+/**
+ * Free-text item search for the in-app Market Board. Mirrors the in-game search:
+ * optional category (ItemSearchCategory) filter, and only marketable items
+ * (ItemSearchCategory >= 1) are returned.
+ */
 export async function searchItems(
   q: string,
-  limit = 12
+  opts: { category?: number; limit?: number } = {}
 ): Promise<{ id: number; name: string }[]> {
   const clean = q.replace(/\s+HQ$/i, "").trim();
-  if (clean.length < 2) return [];
+  const limit = opts.limit ?? 20;
+  const clauses: string[] = [];
+  if (clean.length >= 2) clauses.push(`Name~"${clean}"`);
+  if (opts.category) clauses.push(`ItemSearchCategory=${opts.category}`);
+  else clauses.push(`ItemSearchCategory>=1`); // marketable only
+  if (clean.length < 2 && !opts.category) return []; // need a name or a category
+
   try {
-    const data = await search(`Name~"${clean}"`, "Name", limit);
+    const data = await search(clauses.join(" "), "Name", limit);
     return (data.results ?? [])
       .filter((r) => r.fields.Name)
       .map((r) => ({ id: r.row_id, name: r.fields.Name as string }));
+  } catch {
+    return [];
+  }
+}
+
+export interface ItemCategory {
+  id: number;
+  name: string;
+  group: number;
+}
+
+// Group number -> friendly label (matches the in-game Market Board tabs).
+const CATEGORY_GROUP: Record<number, string> = {
+  1: "Weapons & Tools",
+  2: "Armor & Accessories",
+  3: "Items & Materials",
+  4: "Housing & Furnishings",
+};
+
+export function categoryGroupLabel(group: number): string {
+  return CATEGORY_GROUP[group] ?? "Other";
+}
+
+/** The in-game Market Board categories (ItemSearchCategory sheet). */
+export async function getSearchCategories(): Promise<ItemCategory[]> {
+  try {
+    const res = await fetch(
+      `${BASE}/sheet/ItemSearchCategory?limit=200&fields=Name,Category,Order`,
+      { headers: { "User-Agent": "EorzeaAdvisor/1.0" }, next: { revalidate: 86400 } }
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      rows?: { row_id: number; fields: { Name?: string; Category?: number; Order?: number } }[];
+    };
+    return (data.rows ?? [])
+      .filter((r) => r.fields.Name && r.fields.Name.trim().length > 0 && (r.fields.Category ?? 0) >= 1)
+      .map((r) => ({
+        id: r.row_id,
+        name: r.fields.Name as string,
+        group: r.fields.Category ?? 0,
+      }))
+      .sort((a, b) => a.group - b.group || a.id - b.id);
   } catch {
     return [];
   }
