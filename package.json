@@ -1,6 +1,6 @@
 {
   "name": "eorzea-advisor",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "A cozy FFXIV companion — gear, food, roulettes and gil advice for any job and level.",
   "author": "Eorzea Advisor",
@@ -70,11 +70,11 @@
       ]
     },
     "nsis": {
-      "oneClick": false,
+      "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
+      "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
+      "runAfterFinish": true,
       "shortcutName": "Eorzea Advisor",
       "installerIcon": "build-assets/icon.ico",
       "uninstallerIcon": "build-assets/icon.ico"
