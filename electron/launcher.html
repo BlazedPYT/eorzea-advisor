@@ -194,35 +194,42 @@
         $("statusText").textContent = ok ? "Ready to go!" : "Warming up the aetheryte…";
       }
 
+      function renderUpdate(s) {
+        if (!s) return;
+        const show = (on) => $("update").classList.toggle("show", on);
+        $("install").style.display = "none";
+        switch (s.status) {
+          case "checking":
+            show(true); $("uTitle").textContent = "Checking for updates…"; $("uBar").style.width = "0%"; break;
+          case "downloading":
+            show(true);
+            $("uTitle").textContent = "Downloading update" + (s.version ? " v" + s.version : "") + "… " + (s.percent || 0) + "%";
+            $("uBar").style.width = (s.percent || 0) + "%"; break;
+          case "downloaded":
+            show(true);
+            $("uTitle").textContent = "Update" + (s.version ? " v" + s.version : "") + " ready!";
+            $("uBar").style.width = "100%";
+            $("install").style.display = "inline-flex"; break;
+          case "none":
+            show(true); $("uTitle").textContent = "You're on the latest version ✓";
+            setTimeout(() => { if (updateStatus === "none") show(false); }, 3000); break;
+          case "error":
+            show(true); $("uTitle").textContent = "Couldn't check for updates — " + (s.message || "offline?"); break;
+          case "dev":
+            show(false); break;
+          default:
+            show(false);
+        }
+        updateStatus = s.status;
+      }
+      let updateStatus = "idle";
+
       if (E) {
         E.onServerStatus((d) => setReady(!!d.ready));
-
-        // Update lifecycle → reflected in the launcher.
-        E.onUpdateChecking(() => {
-          $("update").classList.add("show");
-          $("uTitle").textContent = "Checking for updates…";
-        });
-        E.onUpdateNone(() => {
-          $("uTitle").textContent = "You're on the latest version ✓";
-          setTimeout(() => $("update").classList.remove("show"), 2500);
-        });
-        E.onUpdateAvailable((d) => {
-          $("update").classList.add("show");
-          $("uTitle").textContent = "Downloading update v" + (d.version || "") + "…";
-        });
-        E.onUpdateProgress((d) => {
-          $("update").classList.add("show");
-          $("uBar").style.width = (d.percent || 0) + "%";
-        });
-        E.onUpdateDownloaded((d) => {
-          $("update").classList.add("show");
-          $("uTitle").textContent = "Update v" + (d.version || "") + " ready!";
-          $("uBar").style.width = "100%";
-          $("install").style.display = "inline-flex";
-        });
-        E.onUpdateError(() => {
-          $("uTitle").textContent = "Couldn't check updates (offline?)";
-        });
+        E.onUpdateState((s) => renderUpdate(s));
+        // Pull current state on load so we never miss an event fired before
+        // this page subscribed (e.g. an update already downloaded on launch).
+        E.getUpdateState().then(renderUpdate).catch(() => {});
       }
 
       $("start").addEventListener("click", async () => {
