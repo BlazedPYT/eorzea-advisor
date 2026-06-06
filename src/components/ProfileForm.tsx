@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type {
   CharacterProfile,
@@ -12,6 +12,7 @@ import type {
 } from "@/lib/types";
 import { JobSelector } from "./JobSelector";
 import { LevelSelector } from "./LevelSelector";
+import { Autocomplete, type SuggestItem } from "./Autocomplete";
 import { ALL_SLOTS, SLOT_LABEL } from "@/lib/gear";
 import { getJob } from "@/lib/jobs";
 
@@ -76,6 +77,15 @@ export function ProfileForm({
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [syncWarn, setSyncWarn] = useState<string | null>(null);
 
+  // World list for the world autocomplete (loaded once).
+  const worldsRef = useRef<string[]>([]);
+  useEffect(() => {
+    fetch("/api/worlds")
+      .then((r) => r.json())
+      .then((d) => (worldsRef.current = d.worlds ?? []))
+      .catch(() => {});
+  }, []);
+
   function set<K extends keyof CharacterProfile>(key: K, value: CharacterProfile[K]) {
     setP((prev) => ({ ...prev, [key]: value }));
   }
@@ -88,20 +98,38 @@ export function ProfileForm({
     });
   }
 
-  async function runLodestoneSync() {
+  // Suggestion fetchers for the autocompletes.
+  async function fetchWorlds(q: string): Promise<SuggestItem[]> {
+    const all = worldsRef.current;
+    return all
+      .filter((w) => w.toLowerCase().startsWith(q.toLowerCase()))
+      .slice(0, 10)
+      .map((w) => ({ value: w, label: w }));
+  }
+
+  async function fetchCharacters(q: string): Promise<SuggestItem[]> {
+    const params = new URLSearchParams({ name: q });
+    if (p.world) params.set("world", p.world);
+    const res = await fetch(`/api/lodestone/search?${params.toString()}`);
+    const data = await res.json();
+    return (data.matches ?? []).map((m: any) => ({
+      value: m.name,
+      label: m.name,
+      sublabel: m.dc ? `${m.world} · ${m.dc}` : m.world,
+      avatar: m.avatar,
+      data: m,
+    }));
+  }
+
+  async function doSync(body: { url?: string; name?: string; world?: string }) {
     setSyncing(true);
     setSyncMsg(null);
     setSyncWarn(null);
     try {
-      const isUrl = /lodestone\/character\/\d+/.test(lodestoneInput);
       const res = await fetch("/api/lodestone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          isUrl
-            ? { url: lodestoneInput }
-            : { name: p.characterName, world: p.world }
-        ),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -119,6 +147,7 @@ export function ProfileForm({
         lodestoneId: data.id,
         lodestoneUrl: data.url,
       }));
+      if (data.url) setLodestoneInput(data.url);
       setSyncMsg(`Synced ${data.items?.length ?? 0} gear slots from Lodestone.`);
       setSyncWarn(data.warning ?? null);
     } catch {
@@ -126,6 +155,18 @@ export function ProfileForm({
     } finally {
       setSyncing(false);
     }
+  }
+
+  function runLodestoneSync() {
+    const isUrl = /lodestone\/character\/\d+/.test(lodestoneInput);
+    return doSync(isUrl ? { url: lodestoneInput } : { name: p.characterName, world: p.world });
+  }
+
+  // Picking a character from the name suggestions auto-syncs that exact profile.
+  function onPickCharacter(item: SuggestItem) {
+    const m = item.data as { id?: string; world?: string } | undefined;
+    if (m?.world) set("world", m.world);
+    if (m?.id) doSync({ url: `https://na.finalfantasyxiv.com/lodestone/character/${m.id}/` });
   }
 
   function submit() {
@@ -161,30 +202,41 @@ export function ProfileForm({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2">
           <label className="label">Character name</label>
-          <input
-            className="field"
+          <Autocomplete
             value={p.characterName}
-            placeholder="e.g. Aria Lumenfield"
-            onChange={(e) => set("characterName", e.target.value)}
+            onChange={(v) => set("characterName", v)}
+            onSelect={onPickCharacter}
+            fetcher={fetchCharacters}
+            minChars={3}
+            placeholder="Start typing your character name…"
+            emptyHint="No characters found yet — keep typing, or set your World first."
           />
+          <p className="mt-1 text-[11px] text-slate-400">
+            🔎 Searches the Lodestone live — pick yourself and we’ll load your gear
+            automatically.
+          </p>
         </div>
         <div>
           <label className="label">World / server</label>
-          <input
-            className="field"
+          <Autocomplete
             value={p.world}
+            onChange={(v) => set("world", v)}
+            fetcher={fetchWorlds}
+            minChars={1}
             placeholder="e.g. Gilgamesh"
-            onChange={(e) => set("world", e.target.value)}
           />
         </div>
         <div>
           <label className="label">Current gil</label>
           <input
-            type="number"
+            inputMode="numeric"
             className="field"
-            value={p.gil}
-            min={0}
-            onChange={(e) => set("gil", Number(e.target.value) || 0)}
+            value={p.gil ? p.gil.toLocaleString() : ""}
+            placeholder="0"
+            onChange={(e) => {
+              const digits = e.target.value.replace(/[^\d]/g, "");
+              set("gil", digits ? Number(digits) : 0);
+            }}
           />
         </div>
       </div>

@@ -85,6 +85,40 @@ export async function findCharacterId(
   return m ? m[1] : null;
 }
 
+export interface CharacterMatch {
+  id: string;
+  name: string;
+  world: string;
+  dc?: string;
+  avatar?: string;
+}
+
+/** Live search for characters by (partial) name, for type-ahead suggestions. */
+export async function searchCharacters(
+  name: string,
+  world?: string,
+  limit = 8
+): Promise<CharacterMatch[]> {
+  if (!name || name.trim().length < 2) return [];
+  let path = `/lodestone/character/?q=${encodeURIComponent(name.trim())}`;
+  if (world) path += `&worldname=${encodeURIComponent(world)}`;
+  const found = await lodeFetch(path);
+  if (!found) return [];
+
+  const re =
+    /href="\/lodestone\/character\/(\d+)\/"\s+class="entry__link">[\s\S]*?entry__chara__face"><img src="([^"]+)"[^>]*>[\s\S]*?entry__name">([^<]+)<[\s\S]*?entry__world">(?:<i[^>]*><\/i>)?\s*([^<]+)</g;
+
+  const out: CharacterMatch[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(found.html)) && out.length < limit) {
+    const [, id, avatar, rawName, rawWorld] = m;
+    const worldName = decode(rawWorld).split("[")[0].trim();
+    const dc = decode(rawWorld).match(/\[([^\]]+)\]/)?.[1];
+    out.push({ id, name: decode(rawName), world: worldName, dc, avatar });
+  }
+  return out;
+}
+
 async function fetchItemName(id: string, index: number): Promise<string | null> {
   const res = await lodeFetch(`/lodestone/character/${id}/equipment/tooltip/${index}`);
   if (!res) return null;

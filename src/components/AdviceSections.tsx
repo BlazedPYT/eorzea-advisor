@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { AdvisorResult } from "@/lib/types";
+import { useMarket } from "./MarketModal";
 
 const PRIORITY_STYLE: Record<string, string> = {
   PRIMARY: "bg-emerald-100 text-emerald-700 ring-emerald-200",
@@ -115,6 +116,7 @@ export function LevelingRoute({ route }: { route: AdvisorResult["route"] }) {
 }
 
 export function FoodReminder({ food }: { food: AdvisorResult["food"] }) {
+  const market = useMarket();
   return (
     <section className="space-y-3">
       <h3 className="section-title">🍳 Food buff reminder</h3>
@@ -126,21 +128,23 @@ export function FoodReminder({ food }: { food: AdvisorResult["food"] }) {
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
           {food.map((f, i) => (
-            <a
+            <button
               key={i}
-              href={`https://universalis.app/search?q=${encodeURIComponent(f.marketSearch)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="glass-hover rounded-2xl bg-white/50 p-3 dark:bg-white/5"
+              type="button"
+              onClick={() => market.openByName(f.marketSearch)}
+              className="glass-hover rounded-2xl bg-white/50 p-3 text-left dark:bg-white/5"
             >
               <div className="flex items-center gap-2">
                 <span className="text-lg">🍴</span>
                 <span className="font-bold text-slate-800 dark:text-slate-100">
                   {f.name}
                 </span>
+                <span className="ml-auto text-[11px] font-semibold text-lavender-500">
+                  see prices →
+                </span>
               </div>
               <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{f.note}</p>
-            </a>
+            </button>
           ))}
         </div>
       </div>

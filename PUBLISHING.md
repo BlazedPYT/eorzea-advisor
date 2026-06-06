@@ -41,7 +41,7 @@ Auto-updates are wired to **GitHub Releases** (free, reliable).
    GitHub → Settings → Developer settings → Personal access tokens → *Tokens (classic)* →
    Generate new token → tick **repo** → copy it.
 4. **Set the token** in your terminal before publishing:
-   - PowerShell: `$env:GH_TOKEN = "ghp_yourtokenhere"`
+   - PowerShell: `$env:GH_TOKEN = "<your-personal-access-token>"`
    - (electron-builder reads `GH_TOKEN` automatically.)
 
 > **Private repo note:** auto-update from a *private* repo needs the client to send

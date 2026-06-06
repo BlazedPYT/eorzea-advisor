@@ -13,3 +13,6 @@ next-env.d.ts
 /CLIENT FOR HALP/
 /dist/
 /data/
+
+# Claude Code local config (never commit — may contain secrets)
+.claude/

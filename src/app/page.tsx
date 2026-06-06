@@ -10,16 +10,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { ProfileForm } from "@/components/ProfileForm";
 import { CharacterCard } from "@/components/CharacterCard";
 import { WhatNextCard } from "@/components/WhatNextCard";
-import { GearAdvisor } from "@/components/GearAdvisor";
-import {
-  FoodReminder,
-  GilWarnings,
-  LevelingRoute,
-  LuxurySuggestions,
-  QueueAdvisor,
-} from "@/components/AdviceSections";
+import { Dashboard } from "@/components/Dashboard";
+import { MarketProvider } from "@/components/MarketModal";
 import { UpdateBanner } from "@/components/UpdateBanner";
-import { MarketTax } from "@/components/MarketTax";
 
 const EMPTY_PROFILE: CharacterProfile = {
   characterName: "",
@@ -183,19 +176,10 @@ export default function Home() {
               </motion.div>
             )}
 
-            <WhatNextCard whatNext={advice.whatNext} />
-
-            <GearAdvisor profile={profile} equipped={gear} />
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <QueueAdvisor queue={advice.queue} />
-              <LevelingRoute route={advice.route} />
-            </div>
-
-            <FoodReminder food={advice.food} />
-            <MarketTax world={profile.world} />
-            <GilWarnings warnings={advice.gilWarnings} />
-            <LuxurySuggestions luxury={advice.luxury} />
+            <MarketProvider world={profile.world}>
+              <WhatNextCard whatNext={advice.whatNext} />
+              <Dashboard profile={profile} gear={gear} advice={advice} />
+            </MarketProvider>
           </motion.div>
         )}
       </AnimatePresence>

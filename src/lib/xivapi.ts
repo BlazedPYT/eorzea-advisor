@@ -62,6 +62,23 @@ async function search(query: string, fields: string, limit = 50): Promise<Search
   return (await res.json()) as SearchResult;
 }
 
+/** Free-text item search for the in-app Market Board (returns several matches). */
+export async function searchItems(
+  q: string,
+  limit = 12
+): Promise<{ id: number; name: string }[]> {
+  const clean = q.replace(/\s+HQ$/i, "").trim();
+  if (clean.length < 2) return [];
+  try {
+    const data = await search(`Name~"${clean}"`, "Name", limit);
+    return (data.results ?? [])
+      .filter((r) => r.fields.Name)
+      .map((r) => ({ id: r.row_id, name: r.fields.Name as string }));
+  } catch {
+    return [];
+  }
+}
+
 /** Resolve a single item id by (near-)exact name. Strips a trailing " HQ". */
 export async function searchItemByName(name: string): Promise<ResolvedItem | null> {
   const clean = name.replace(/\s+HQ$/i, "").trim();

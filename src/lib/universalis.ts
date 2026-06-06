@@ -66,6 +66,25 @@ async function loadWorldMap(): Promise<Record<string, string>> {
   }
 }
 
+/** All world (server) names, sorted — for the world autocomplete. */
+export async function getWorldNames(): Promise<string[]> {
+  try {
+    const res = await fetch(`${BASE}/worlds`, {
+      headers: { "User-Agent": UA },
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return [];
+    const worlds = (await res.json()) as { id: number; name: string }[];
+    // Real player worlds have plain ASCII names; filter out test/internal worlds.
+    return worlds
+      .map((w) => w.name)
+      .filter((n) => /^[A-Za-z]+$/.test(n))
+      .sort((a, b) => a.localeCompare(b));
+  } catch {
+    return [];
+  }
+}
+
 /** Resolve the best query scope: the player's DC (for cross-world pricing). */
 export async function resolveScope(world: string): Promise<string> {
   if (!world) return "Aether";
@@ -127,6 +146,112 @@ export async function priceItems(
     return Object.fromEntries(
       ids.map((id) => [id, { itemId: id, error: err instanceof Error ? err.message : "fetch failed" }])
     );
+  }
+}
+
+// Universalis retainerCity id -> city name (for the in-app listings table).
+const CITY_BY_ID: Record<number, string> = {
+  1: "Limsa Lominsa",
+  2: "Gridania",
+  3: "Ul'dah",
+  4: "Ishgard",
+  7: "Kugane",
+  10: "Crystarium",
+  11: "Old Sharlayan",
+  12: "Tuliyollal",
+};
+
+export interface MarketListing {
+  world?: string;
+  price: number;
+  qty: number;
+  hq: boolean;
+  total: number;
+  city?: string;
+  retainer?: string;
+}
+export interface MarketHistory {
+  world?: string;
+  price: number;
+  qty: number;
+  hq: boolean;
+  ms: number;
+}
+export interface ItemDetail {
+  itemId: number;
+  scope: string;
+  minNq?: number;
+  minHq?: number;
+  avgNq?: number;
+  avgHq?: number;
+  velocity?: number;
+  lastUploadMs?: number;
+  listings: MarketListing[];
+  history: MarketHistory[];
+  error?: string;
+}
+
+/** Full in-app Market Board view for one item across the player's Data Center. */
+export async function getItemDetail(world: string, itemId: number): Promise<ItemDetail> {
+  const scope = await resolveScope(world);
+  const base: ItemDetail = { itemId, scope, listings: [], history: [] };
+  try {
+    const res = await fetch(`${BASE}/${encodeURIComponent(scope)}/${itemId}?listings=20&entries=20`, {
+      headers: { "User-Agent": UA },
+      next: { revalidate: 120 },
+    });
+    if (!res.ok) return { ...base, error: `HTTP ${res.status}` };
+    const d = (await res.json()) as {
+      minPriceNQ?: number;
+      minPriceHQ?: number;
+      averagePriceNQ?: number;
+      averagePriceHQ?: number;
+      regularSaleVelocity?: number;
+      lastUploadTime?: number;
+      listings?: {
+        pricePerUnit: number;
+        hq?: boolean;
+        worldName?: string;
+        quantity?: number;
+        total?: number;
+        retainerCity?: number;
+        retainerName?: string;
+      }[];
+      recentHistory?: {
+        pricePerUnit: number;
+        hq?: boolean;
+        worldName?: string;
+        quantity?: number;
+        timestamp?: number;
+      }[];
+    };
+    return {
+      ...base,
+      minNq: d.minPriceNQ || undefined,
+      minHq: d.minPriceHQ || undefined,
+      avgNq: d.averagePriceNQ ? Math.round(d.averagePriceNQ) : undefined,
+      avgHq: d.averagePriceHQ ? Math.round(d.averagePriceHQ) : undefined,
+      velocity: d.regularSaleVelocity ? Math.round(d.regularSaleVelocity * 10) / 10 : undefined,
+      lastUploadMs: d.lastUploadTime,
+      listings: (d.listings ?? []).map((l) => ({
+        world: l.worldName,
+        price: l.pricePerUnit,
+        qty: l.quantity ?? 1,
+        hq: !!l.hq,
+        total: l.total ?? l.pricePerUnit * (l.quantity ?? 1),
+        city: l.retainerCity != null ? CITY_BY_ID[l.retainerCity] : undefined,
+        retainer: l.retainerName || undefined,
+      })),
+      history: (d.recentHistory ?? []).map((h) => ({
+        world: h.worldName,
+        price: h.pricePerUnit,
+        qty: h.quantity ?? 1,
+        hq: !!h.hq,
+        ms: h.timestamp ? h.timestamp * 1000 : 0,
+      })),
+    };
+  } catch (err) {
+    return { ...base, error: err instanceof Error ? err.message : "fetch failed" };
   }
 }
 

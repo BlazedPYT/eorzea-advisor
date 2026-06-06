@@ -5,8 +5,7 @@ import type { GearRecommendation } from "@/lib/types";
 import { SLOT_EMOJI, SLOT_LABEL } from "@/lib/gear";
 import { RecLabelChip } from "./RecLabelChip";
 import { PriceDisplay } from "./PriceDisplay";
-
-const UNIVERSALIS = "https://universalis.app/market";
+import { useMarket } from "./MarketModal";
 
 export function GearSlotCard({
   rec,
@@ -15,15 +14,14 @@ export function GearSlotCard({
   rec: GearRecommendation;
   index?: number;
 }) {
+  const market = useMarket();
   const equippedName = rec.equipped?.name && rec.equipped.name !== "—" ? rec.equipped.name : null;
-  const searchUrl =
-    rec.price?.itemId != null
-      ? `${UNIVERSALIS}/${rec.price.itemId}`
-      : rec.marketSearch
-      ? `https://universalis.app/search?q=${encodeURIComponent(
-          rec.marketSearch.replace(/\s+HQ$/i, "")
-        )}`
-      : null;
+  const canViewMarket = rec.price?.itemId != null || !!rec.marketSearch;
+
+  function viewMarket() {
+    if (rec.price?.itemId != null) market.openItem(rec.price.itemId, rec.recommendedName);
+    else if (rec.marketSearch) market.openByName(rec.marketSearch);
+  }
 
   return (
     <motion.div
@@ -79,15 +77,14 @@ export function GearSlotCard({
         <PriceDisplay price={rec.price} hq={rec.hqMatters} />
       ) : null}
 
-      {searchUrl ? (
-        <a
-          href={searchUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="text-[11px] font-semibold text-lavender-600 underline-offset-2 hover:underline dark:text-lavender-300"
+      {canViewMarket && rec.label !== "USE_POETICS" ? (
+        <button
+          type="button"
+          onClick={viewMarket}
+          className="self-start text-[11px] font-semibold text-lavender-600 underline-offset-2 hover:underline dark:text-lavender-300"
         >
-          Search “{rec.marketSearch || rec.recommendedName}” on Universalis ↗
-        </a>
+          🔎 View live listings in-app
+        </button>
       ) : null}
     </motion.div>
   );
