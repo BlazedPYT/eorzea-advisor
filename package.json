@@ -1,0 +1,90 @@
+{
+  "name": "eorzea-advisor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A cozy FFXIV companion — gear, food, roulettes and gil advice for any job and level.",
+  "author": "Eorzea Advisor",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "icon": "node scripts/generate-icon.mjs",
+    "desktop:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "desktop:assemble": "next build && node scripts/assemble-standalone.mjs",
+    "desktop:build": "npm run desktop:assemble && electron-builder",
+    "desktop:publish": "npm run desktop:assemble && electron-builder --publish always"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.11.17",
+    "next": "14.2.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-updater": "^6.3.9",
+    "png-to-ico": "^3.0.1",
+    "postcss": "^8.4.49",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.eorzeaadvisor.app",
+    "productName": "Eorzea Advisor",
+    "directories": {
+      "output": "CLIENT FOR HALP"
+    },
+    "files": [
+      "electron/**/*",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "server",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "build-assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Eorzea Advisor",
+      "installerIcon": "build-assets/icon.ico",
+      "uninstallerIcon": "build-assets/icon.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "BlazedPYT",
+        "repo": "eorzea-advisor"
+      }
+    ]
+  }
+}

@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f6f3ff;
+  --fg: #2b2640;
+}
+
+.dark {
+  --bg: #14121f;
+  --fg: #ece9f7;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+}
+
+@layer components {
+  /* Frosted glass card */
+  .glass {
+    @apply rounded-3xl border border-white/60 bg-white/70 shadow-card backdrop-blur-xl
+      transition-all duration-300;
+  }
+  .dark .glass {
+    @apply border-white/10 bg-white/[0.06];
+  }
+
+  .glass-hover {
+    @apply hover:-translate-y-0.5 hover:shadow-soft;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold
+      ring-1 ring-inset;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm
+      font-semibold transition-all duration-200 active:scale-[0.98] disabled:opacity-50
+      disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-lavender-500 to-lavender-400 text-white shadow-soft
+      hover:from-lavender-600 hover:to-lavender-500;
+  }
+  .btn-ghost {
+    @apply btn bg-white/60 text-lavender-700 ring-1 ring-inset ring-lavender-200
+      hover:bg-white;
+  }
+  .dark .btn-ghost {
+    @apply bg-white/10 text-lavender-200 ring-white/10 hover:bg-white/20;
+  }
+
+  .field {
+    @apply w-full rounded-2xl border border-lavender-200/70 bg-white/80 px-3.5 py-2.5
+      text-sm text-slate-700 outline-none transition focus:border-lavender-400
+      focus:ring-2 focus:ring-lavender-300/40;
+  }
+  .dark .field {
+    @apply border-white/10 bg-white/5 text-slate-100;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-lavender-600/80;
+  }
+  .dark .label {
+    @apply text-lavender-300/80;
+  }
+
+  .section-title {
+    @apply flex items-center gap-2 text-lg font-bold text-slate-800;
+  }
+  .dark .section-title {
+    @apply text-slate-100;
+  }
+}
+
+/* Pretty scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 234, 0.45);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Loading shimmer */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
