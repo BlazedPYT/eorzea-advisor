@@ -9,7 +9,8 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = url.searchParams.get("q") ?? "";
   const category = Number(url.searchParams.get("category")) || undefined;
+  const lang = url.searchParams.get("lang") ?? undefined;
   if (q.trim().length < 2 && !category) return NextResponse.json({ items: [] });
-  const items = await searchItems(q, { category });
+  const items = await searchItems(q, { category, lang });
   return NextResponse.json({ items });
 }

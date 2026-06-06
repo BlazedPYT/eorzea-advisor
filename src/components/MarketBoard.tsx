@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import clsx from "clsx";
 import { categoryGroupLabel, type ItemCategory } from "@/lib/xivapi";
 import { useMarket } from "./MarketModal";
+import { useSettings } from "./SettingsProvider";
 import { InfoTip } from "./InfoTip";
 
 // In-app Market Board lookup. Mirrors the in-game search: pick a category
@@ -10,6 +12,7 @@ import { InfoTip } from "./InfoTip";
 // never leaving the app. Results render inline (no floating menus to overlap).
 export function MarketBoard() {
   const market = useMarket();
+  const { settings } = useSettings();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState(0);
   const [cats, setCats] = useState<ItemCategory[]>([]);
@@ -39,6 +42,7 @@ export function MarketBoard() {
         const params = new URLSearchParams();
         if (q.trim().length >= 2) params.set("q", q.trim());
         if (category) params.set("category", String(category));
+        params.set("lang", settings.language);
         const res = await fetch(`/api/items/search?${params.toString()}`);
         const data = await res.json();
         if (id === reqId.current) setItems(data.items ?? []);
@@ -47,7 +51,7 @@ export function MarketBoard() {
       }
     }, 280);
     return () => clearTimeout(t);
-  }, [q, category]);
+  }, [q, category, settings.language]);
 
   // Build grouped <optgroup>s for the category select.
   const grouped = useMemo(() => {
@@ -68,11 +72,11 @@ export function MarketBoard() {
       </h3>
 
       <div className="glass p-4">
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className={clsx("flex flex-col gap-2", settings.leftNav && "sm:flex-row")}>
           <select
             value={category}
             onChange={(e) => setCategory(Number(e.target.value))}
-            className="field sm:max-w-[14rem]"
+            className={clsx("field", settings.leftNav && "sm:max-w-[14rem]")}
           >
             <option value={0}>All categories</option>
             {grouped.map((g) => (

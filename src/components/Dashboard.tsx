@@ -7,6 +7,7 @@ import type { AdvisorResult, CharacterProfile, GearItem, Goal } from "@/lib/type
 import { GearAdvisor } from "./GearAdvisor";
 import { MarketTax } from "./MarketTax";
 import { MarketBoard } from "./MarketBoard";
+import { MarketSettings } from "./MarketSettings";
 import { DailyChecklist } from "./DailyChecklist";
 import { Locator } from "./Locator";
 import { InfoTip } from "./InfoTip";
@@ -120,8 +121,9 @@ export function Dashboard({
         keywords: ["market", "tax", "goblin", "board", "sell", "retainer", "city", "price", "universalis", "search", "listing", "item"],
         node: (
           <div className="space-y-6">
+            <MarketSettings />
             <MarketBoard />
-            <MarketTax world={profile.world} />
+            <MarketTax />
           </div>
         ),
       },

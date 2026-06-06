@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { CharacterProfile, GearItem, GearRecommendation } from "@/lib/types";
 import { GearSlotCard } from "./GearSlotCard";
 import { InfoTip } from "./InfoTip";
+import { useSettings } from "./SettingsProvider";
 
 function SkeletonCard() {
   return (
@@ -23,6 +24,8 @@ export function GearAdvisor({
   profile: CharacterProfile;
   equipped: GearItem[];
 }) {
+  const { settings } = useSettings();
+  const marketWorld = settings.homeWorld || profile.world;
   const [recs, setRecs] = useState<GearRecommendation[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState<string | null>(null);
@@ -34,7 +37,7 @@ export function GearAdvisor({
     fetch("/api/advisor/gear", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profile, equipped }),
+      body: JSON.stringify({ profile: { ...profile, world: marketWorld }, equipped }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -49,7 +52,7 @@ export function GearAdvisor({
     };
     // re-run when the meaningful inputs change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.job, profile.level, profile.world, profile.gil, equipped.length]);
+  }, [profile.job, profile.level, profile.gil, marketWorld, equipped.length]);
 
   return (
     <section className="space-y-3">
@@ -59,7 +62,7 @@ export function GearAdvisor({
           <InfoTip text="A recommended item for each of your 11 gear slots, with a live Market Board price and a Buy / Skip / Replace-soon label. 'Better from Poetics/dungeon' means don't spend gil — get it free in-game. Tap 'View live listings' to see prices without leaving the app." />
         </h3>
         <span className="text-xs text-slate-400">
-          live Market Board pricing · {profile.world || "Aether"}
+          live Market Board pricing · {marketWorld || "Aether"}
         </span>
       </div>
       {note && (

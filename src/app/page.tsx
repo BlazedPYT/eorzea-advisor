@@ -12,6 +12,7 @@ import { CharacterCard } from "@/components/CharacterCard";
 import { WhatNextCard } from "@/components/WhatNextCard";
 import { Dashboard } from "@/components/Dashboard";
 import { MarketProvider } from "@/components/MarketModal";
+import { SettingsProvider } from "@/components/SettingsProvider";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
 const EMPTY_PROFILE: CharacterProfile = {
@@ -189,10 +190,12 @@ export default function Home() {
               </motion.div>
             )}
 
-            <MarketProvider world={profile.world}>
-              <WhatNextCard whatNext={advice.whatNext} />
-              <Dashboard profile={profile} gear={gear} advice={advice} />
-            </MarketProvider>
+            <SettingsProvider initialWorld={profile.world}>
+              <MarketProvider>
+                <WhatNextCard whatNext={advice.whatNext} />
+                <Dashboard profile={profile} gear={gear} advice={advice} />
+              </MarketProvider>
+            </SettingsProvider>
           </motion.div>
         )}
       </AnimatePresence>

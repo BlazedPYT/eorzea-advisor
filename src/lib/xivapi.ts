@@ -50,10 +50,16 @@ function escValue(v: unknown): number | undefined {
   return undefined;
 }
 
-async function search(query: string, fields: string, limit = 50): Promise<SearchResult> {
+async function search(
+  query: string,
+  fields: string,
+  limit = 50,
+  lang?: string
+): Promise<SearchResult> {
+  const langParam = lang && lang !== "en" ? `&language=${lang}` : "";
   const url = `${BASE}/search?sheets=Item&query=${encodeURIComponent(
     query
-  )}&fields=${encodeURIComponent(fields)}&limit=${limit}`;
+  )}&fields=${encodeURIComponent(fields)}&limit=${limit}${langParam}`;
   const res = await fetch(url, {
     headers: { "User-Agent": "EorzeaAdvisor/0.1" },
     next: { revalidate: 86400 }, // static data — cache a day
@@ -69,7 +75,7 @@ async function search(query: string, fields: string, limit = 50): Promise<Search
  */
 export async function searchItems(
   q: string,
-  opts: { category?: number; limit?: number } = {}
+  opts: { category?: number; limit?: number; lang?: string } = {}
 ): Promise<{ id: number; name: string }[]> {
   const clean = q.replace(/\s+HQ$/i, "").trim();
   const limit = opts.limit ?? 20;
@@ -80,7 +86,7 @@ export async function searchItems(
   if (clean.length < 2 && !opts.category) return []; // need a name or a category
 
   try {
-    const data = await search(clauses.join(" "), "Name", limit);
+    const data = await search(clauses.join(" "), "Name", limit, opts.lang);
     return (data.results ?? [])
       .filter((r) => r.fields.Name)
       .map((r) => ({ id: r.row_id, name: r.fields.Name as string }));

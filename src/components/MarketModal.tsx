@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ItemDetail } from "@/lib/universalis";
+import { useSettings } from "./SettingsProvider";
 
 interface MarketCtx {
   openItem: (id: number, name?: string) => void;
@@ -33,13 +34,9 @@ function ago(ms?: number) {
   return `${Math.round(h / 24)}d ago`;
 }
 
-export function MarketProvider({
-  world,
-  children,
-}: {
-  world: string;
-  children: React.ReactNode;
-}) {
+export function MarketProvider({ children }: { children: React.ReactNode }) {
+  const { settings, fmt, fmtTime } = useSettings();
+  const world = settings.homeWorld || "Aether";
   const [open, setOpen] = useState(false);
   const [name, setName] = useState<string>("");
   const [detail, setDetail] = useState<ItemDetail | null>(null);
@@ -74,7 +71,9 @@ export function MarketProvider({
       setDetail(null);
       setName(q.replace(/\s+HQ$/i, ""));
       try {
-        const res = await fetch(`/api/items/search?q=${encodeURIComponent(q.replace(/\s+HQ$/i, ""))}`);
+        const res = await fetch(
+          `/api/items/search?q=${encodeURIComponent(q.replace(/\s+HQ$/i, ""))}&lang=${settings.language}`
+        );
         const data = await res.json();
         const first = data.items?.[0];
         if (first) await load(first.id, first.name);
@@ -128,8 +127,8 @@ export function MarketProvider({
                   {detail && !detail.error && (
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                       <span>across {detail.scope}</span>
-                      {detail.minHq ? <span>cheapest HQ {gil(detail.minHq)}</span> : null}
-                      {detail.minNq ? <span>cheapest NQ {gil(detail.minNq)}</span> : null}
+                      {detail.minHq ? <span>cheapest HQ {fmt(detail.minHq)}</span> : null}
+                      {detail.minNq ? <span>cheapest NQ {fmt(detail.minNq)}</span> : null}
                       {detail.velocity != null ? <span>{detail.velocity}/day sold</span> : null}
                       {detail.lastUploadMs ? <span>updated {ago(detail.lastUploadMs)}</span> : null}
                     </div>
@@ -188,7 +187,7 @@ export function MarketProvider({
                                 className="border-t border-lavender-100/70 odd:bg-white/30 dark:border-white/5 dark:odd:bg-white/[0.02]"
                               >
                                 <td className="px-3 py-2 font-display font-bold text-slate-800 dark:text-slate-100">
-                                  {gil(l.price)}
+                                  {fmt(l.price)}
                                 </td>
                                 <td className="px-3 py-2 text-slate-500">{l.qty}</td>
                                 <td className="px-3 py-2">
@@ -221,7 +220,7 @@ export function MarketProvider({
                               title={`${h.world ?? ""} ${ago(h.ms)}`}
                             >
                               {h.hq ? "✨" : ""}
-                              {gil(h.price)} ×{h.qty}
+                              {fmt(h.price)} ×{h.qty}
                             </span>
                           ))}
                         </div>

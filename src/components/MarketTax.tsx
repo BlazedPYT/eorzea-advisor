@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { TaxRates } from "@/lib/types";
 import { InfoTip } from "./InfoTip";
+import { useSettings } from "./SettingsProvider";
 
 const CITY_EMOJI: Record<string, string> = {
   "Limsa Lominsa": "⚓",
@@ -18,7 +19,9 @@ const CITY_EMOJI: Record<string, string> = {
 
 // Live Market Board retainer/counter tax per city (the real "goblin tax").
 // Selling in the lowest-tax city keeps more gil in your pocket.
-export function MarketTax({ world }: { world: string }) {
+export function MarketTax() {
+  const { settings } = useSettings();
+  const world = settings.homeWorld || "Gilgamesh";
   const [tax, setTax] = useState<TaxRates | null>(null);
   const [loading, setLoading] = useState(true);
 
