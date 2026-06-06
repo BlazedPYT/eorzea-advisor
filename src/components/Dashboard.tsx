@@ -12,6 +12,7 @@ import { DailyChecklist } from "./DailyChecklist";
 import { Locator } from "./Locator";
 import { Leves } from "./Leves";
 import { Crafting } from "./Crafting";
+import { Mounts } from "./Mounts";
 import { InfoTip } from "./InfoTip";
 import {
   FoodReminder,
@@ -60,6 +61,7 @@ const QUICK_QUESTIONS: { q: string; tab: TabId }[] = [
   { q: "Where do I find a monster?", tab: "locator" },
   { q: "Show me leves to grind", tab: "leves" },
   { q: "How do I level crafting?", tab: "crafting" },
+  { q: "How do I get a mount?", tab: "luxury" },
   { q: "What gear should I buy?", tab: "gear" },
   { q: "What should I run next?", tab: "leveling" },
   { q: "How do I save gil?", tab: "gil" },
@@ -167,11 +169,16 @@ export function Dashboard({
       },
       {
         id: "luxury",
-        label: "Glam & Mounts",
-        emoji: "💎",
-        blurb: "Fun stuff: glamour, dyes, mounts and minions.",
-        keywords: ["glamour", "glam", "mount", "minion", "luxury", "cosmetic", "flex", "fashion", "dye"],
-        node: <LuxurySuggestions luxury={advice.luxury} />,
+        label: "Mounts & Glam",
+        emoji: "🐎",
+        blurb: "Every mount & minion with pictures + how to obtain, plus glam ideas.",
+        keywords: ["glamour", "glam", "mount", "mounts", "minion", "minions", "luxury", "cosmetic", "flex", "fashion", "dye", "collect", "obtain"],
+        node: (
+          <div className="space-y-6">
+            <Mounts />
+            <LuxurySuggestions luxury={advice.luxury} />
+          </div>
+        ),
       },
     ],
     [profile, gear, advice]

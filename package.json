@@ -1,6 +1,6 @@
 {
   "name": "eorzea-advisor",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "private": true,
   "description": "A cozy FFXIV companion — gear, food, roulettes and gil advice for any job and level.",
   "author": "Eorzea Advisor",
@@ -13,6 +13,7 @@
     "icon": "node scripts/generate-icon.mjs",
     "data:bestiary": "node scripts/build-bestiary.mjs",
     "data:leves": "node scripts/build-leves.mjs",
+    "data:mounts": "node scripts/build-mounts.mjs",
     "desktop:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "desktop:assemble": "next build && node scripts/assemble-standalone.mjs",
     "desktop:build": "npm run desktop:assemble && electron-builder",
