@@ -31,7 +31,7 @@ async function main() {
   let after = null;
   for (let page = 0; page < 20; page++) {
     const afterParam = after == null ? "" : `&after=${after}`;
-    const url = `${XIV}/sheet/Leve?limit=500${afterParam}&fields=Name,ClassJobLevel,LeveAssignmentType.Name,PlaceNameStartZone.Name,LevelLevemete@as(raw)`;
+    const url = `${XIV}/sheet/Leve?limit=500${afterParam}&fields=Name,ClassJobLevel,LeveAssignmentType.Name,PlaceNameStartZone.Name,ExpReward,AllowanceCost,DataId@as(raw),LevelLevemete@as(raw)`;
     const d = await getJson(url);
     const rows = d.rows || [];
     if (rows.length === 0) break;
@@ -44,6 +44,9 @@ async function main() {
         level: f.ClassJobLevel,
         type: f.LeveAssignmentType?.fields?.Name || "",
         zone: f.PlaceNameStartZone?.fields?.Name || "",
+        exp: f.ExpReward || 0,
+        allowance: f.AllowanceCost || 1,
+        dataId: f["DataId@as(raw)"] || 0,
         levelId: f["LevelLevemete@as(raw)"] || 0,
       });
     }
@@ -61,6 +64,33 @@ async function main() {
     const d = await getJson(`${XIV}/sheet/Level?rows=${chunk.join(",")}&fields=Object@as(raw)`);
     for (const r of d.rows || []) levelToNpc[r.row_id] = r.fields["Object@as(raw)"] || 0;
   }
+
+  // 2b) tradecraft leves: resolve the items you must craft/turn in (CraftLeve),
+  //     so we can tell players what to bring or buy on the Market Board.
+  const craftIds = [
+    ...new Set(leves.filter((l) => categorize(l.type) === "Tradecraft").map((l) => l.dataId).filter(Boolean)),
+  ];
+  console.log(`Resolving ${craftIds.length} tradecraft requirements…`);
+  const reqByData = {};
+  for (let i = 0; i < craftIds.length; i += 100) {
+    const chunk = craftIds.slice(i, i + 100);
+    const d = await getJson(`${XIV}/sheet/CraftLeve?rows=${chunk.join(",")}&fields=Item%5B%5D.Name,ItemCount,Repeats`);
+    for (const r of d.rows || []) {
+      const f = r.fields;
+      const items = f.Item || [];
+      const counts = f.ItemCount || [];
+      const required = [];
+      for (let j = 0; j < items.length; j++) {
+        const id = items[j]?.row_id;
+        const name = items[j]?.fields?.Name;
+        const count = counts[j] || 0;
+        if (id && name && count > 0) required.push({ id, name, count });
+      }
+      reqByData[r.row_id] = { required, repeats: f.Repeats || 0 };
+    }
+    process.stdout.write(`  …${Math.min(i + 100, craftIds.length)}/${craftIds.length}\r`);
+  }
+  console.log("");
 
   // 3) levemete NPC id -> name + position, from the bundled bestiary data,
   //    enriched with the map image + nearest aetheryte (self-contained leves).
@@ -112,6 +142,9 @@ async function main() {
       type: l.type,
       category: categorize(l.type),
       zone: l.zone,
+      exp: l.exp,
+      allowance: l.allowance,
+      expPerAllowance: l.allowance ? Math.round(l.exp / l.allowance) : l.exp,
       levemeteId: npcId || null,
       levemete: info ? info.name : null,
       issueZone: info ? info.zone : null,
@@ -121,6 +154,8 @@ async function main() {
       image: info ? info.image : null,
       sizeFactor: info ? info.sizeFactor : null,
       aetheryte: info ? info.aetheryte : null,
+      required: reqByData[l.dataId]?.required || [],
+      repeats: reqByData[l.dataId]?.repeats || 0,
     };
   });
 

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { coordToPercent } from "@/lib/coords";
 import { InfoTip } from "./InfoTip";
+import { useMarket } from "./MarketModal";
 
 interface Leve {
   id: number;
@@ -21,6 +22,11 @@ interface Leve {
   image: string | null;
   sizeFactor: number | null;
   aetheryte: string | null;
+  exp: number;
+  allowance: number;
+  expPerAllowance: number;
+  required: { id: number; name: string; count: number }[];
+  repeats: number;
 }
 interface ZoneOption { mapId: number; zone: string; aetheryte: string }
 
@@ -64,6 +70,7 @@ const BRACKETS = [
 ];
 
 export function Leves() {
+  const market = useMarket();
   const [leves, setLeves] = useState<Leve[]>([]);
   const [zones, setZones] = useState<ZoneOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +78,7 @@ export function Leves() {
   const [type, setType] = useState<string>("");
   const [bracket, setBracket] = useState(0);
   const [q, setQ] = useState("");
+  const [best, setBest] = useState(false);
   const [open, setOpen] = useState<Leve | null>(null);
   const [currentMapId, setCurrentMapId] = useState<number | "">("");
 
@@ -96,12 +104,16 @@ export function Leves() {
   const br = BRACKETS[bracket];
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
-    return leves
+    const out = leves
       .filter((l) => (cat === "All" || l.category === cat))
       .filter((l) => (!type || l.type === type))
       .filter((l) => l.level >= br.min && l.level <= br.max)
       .filter((l) => !ql || l.name.toLowerCase().includes(ql) || (l.levemete ?? "").toLowerCase().includes(ql));
-  }, [leves, cat, type, br, q]);
+    if (best) {
+      return [...out].sort((a, b) => b.expPerAllowance - a.expPerAllowance || a.level - b.level);
+    }
+    return out;
+  }, [leves, cat, type, br, q, best]);
 
   return (
     <section className="space-y-3">
@@ -154,6 +166,18 @@ export function Leves() {
           </select>
           <input className="field" placeholder="Search leve or levemete…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
+        <button
+          onClick={() => setBest((b) => !b)}
+          className={clsx(
+            "flex items-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-semibold transition",
+            best
+              ? "bg-gradient-to-r from-gold-400 to-gold-300 text-gold-900 shadow-soft"
+              : "bg-white/60 text-slate-600 ring-1 ring-inset ring-lavender-200/70 hover:bg-white dark:bg-white/5 dark:text-slate-200 dark:ring-white/10"
+          )}
+        >
+          ⭐ Best for leveling{best ? " · on" : ""}
+          <InfoTip text="Sorts your filtered leves by the most EXP per allowance (real reward data). The ⭐ picks are the most efficient leves to spend allowances on for leveling." />
+        </button>
         {cat !== "All" && (
           <p className="rounded-2xl bg-lavender-100/50 px-3 py-2 text-xs text-lavender-700 dark:bg-white/5 dark:text-lavender-200">
             💡 {SPEED_TIPS[cat]}
@@ -179,11 +203,46 @@ export function Leves() {
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
                   <span className={clsx("chip", CAT_STYLE[open.category])}>{open.type || open.category}</span>
                   <span className="chip bg-slate-100 text-slate-600 ring-slate-200 dark:bg-white/10 dark:text-slate-200">Lv {open.level}</span>
+                  {open.exp > 0 && (
+                    <span className="chip bg-gold-300/40 text-gold-600 ring-gold-300/60">
+                      ✨ {open.exp.toLocaleString()} EXP{open.allowance > 1 ? ` · ${open.allowance} allowances` : ""}
+                    </span>
+                  )}
                   {open.zone && <span className="chip bg-lavender-100 text-lavender-700 ring-lavender-200 dark:bg-white/10 dark:text-lavender-200">do it in {open.zone}</span>}
                 </div>
               </div>
               <button onClick={() => setOpen(null)} className="btn-ghost !px-3 !py-1.5">← Back</button>
             </div>
+
+            {/* what to bring / buy */}
+            {open.required.length > 0 && (
+              <div className="rounded-2xl border border-amber-200/70 bg-amber-50/70 p-3 dark:border-amber-400/20 dark:bg-amber-500/10">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-amber-700 dark:text-amber-300">
+                  📦 Bring / turn in
+                  <InfoTip text="Tradecraft leves require you to hand in crafted item(s). Craft them yourself, or buy them (or their materials) on the Market Board — tap a item to see live prices in-app." />
+                </div>
+                <ul className="mt-2 space-y-1.5">
+                  {open.required.map((r) => (
+                    <li key={r.id} className="flex items-center justify-between gap-2 rounded-xl bg-white/60 px-3 py-2 dark:bg-white/5">
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        {r.count}× {r.name}
+                      </span>
+                      <button
+                        onClick={() => market.openItem(r.id, r.name)}
+                        className="shrink-0 rounded-lg bg-lavender-100 px-2.5 py-1 text-[11px] font-semibold text-lavender-700 ring-1 ring-inset ring-lavender-200 hover:bg-lavender-200 dark:bg-white/10 dark:text-lavender-200 dark:ring-white/10"
+                      >
+                        🔎 Buy on Market Board
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-[11px] text-amber-700/80 dark:text-amber-300/80">
+                  {open.repeats > 0
+                    ? `Tip: this leve is repeatable — turn in up to ${open.repeats + 1}× (bring ${open.repeats + 1}× the items) for a big EXP bonus.`
+                    : "Craft it yourself, or buy it on the Market Board, then hand it to the levemete."}
+                </p>
+              </div>
+            )}
 
             {open.image && open.x != null && open.y != null ? (
               <LeveMap leve={open} />
@@ -229,7 +288,7 @@ export function Leves() {
               {filtered.length.toLocaleString()} leve{filtered.length === 1 ? "" : "s"} · showing first {Math.min(filtered.length, 80)}
             </div>
             <ul className="max-h-[28rem] space-y-1 overflow-auto pr-1">
-              {filtered.slice(0, 80).map((l) => (
+              {filtered.slice(0, 80).map((l, i) => (
                 <li key={l.id}>
                   <button
                     onClick={() => { setOpen(l); setCurrentMapId(""); }}
@@ -239,9 +298,13 @@ export function Leves() {
                       {l.level}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{l.name}</span>
+                      <span className="flex items-center gap-1.5 truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        {best && i < 3 && <span title="Top pick">⭐</span>}
+                        {l.name}
+                      </span>
                       <span className="block truncate text-[11px] text-slate-500 dark:text-slate-400">
                         {l.levemete ? `${l.levemete} · ${l.issueZone}` : l.zone}
+                        {l.exp > 0 ? ` · ✨ ${l.expPerAllowance.toLocaleString()} EXP/allowance` : ""}
                       </span>
                     </span>
                     <span className={clsx("chip shrink-0", CAT_STYLE[l.category])}>{CAT_EMOJI[l.category]} {l.type || l.category}</span>
