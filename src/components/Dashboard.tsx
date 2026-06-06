@@ -11,6 +11,7 @@ import { MarketSettings } from "./MarketSettings";
 import { DailyChecklist } from "./DailyChecklist";
 import { Locator } from "./Locator";
 import { Leves } from "./Leves";
+import { Crafting } from "./Crafting";
 import { InfoTip } from "./InfoTip";
 import {
   FoodReminder,
@@ -25,6 +26,7 @@ type TabId =
   | "dailies"
   | "locator"
   | "leves"
+  | "crafting"
   | "gear"
   | "leveling"
   | "market"
@@ -57,6 +59,7 @@ const QUICK_QUESTIONS: { q: string; tab: TabId }[] = [
   { q: "What are my dailies?", tab: "dailies" },
   { q: "Where do I find a monster?", tab: "locator" },
   { q: "Show me leves to grind", tab: "leves" },
+  { q: "How do I level crafting?", tab: "crafting" },
   { q: "What gear should I buy?", tab: "gear" },
   { q: "What should I run next?", tab: "leveling" },
   { q: "How do I save gil?", tab: "gil" },
@@ -102,6 +105,14 @@ export function Dashboard({
         blurb: "Every levequest — filter by job & level, see the issuer on the map + travel.",
         keywords: ["leve", "leves", "levequest", "levemete", "allowance", "tradecraft", "battlecraft", "fieldcraft", "guildleve", "repeatable"],
         node: <Leves />,
+      },
+      {
+        id: "crafting",
+        label: "Crafting",
+        emoji: "🔨",
+        blurb: "Level any crafter or gatherer — next-level EXP, the fastest method, and tips.",
+        keywords: ["craft", "crafting", "gather", "gathering", "doh", "dol", "carpenter", "blacksmith", "armorer", "goldsmith", "leatherworker", "weaver", "alchemist", "culinarian", "miner", "botanist", "fisher", "profession", "level"],
+        node: <Crafting />,
       },
       {
         id: "gear",

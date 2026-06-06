@@ -1,0 +1,227 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import clsx from "clsx";
+import {
+  CRAFT_JOBS,
+  GATHER_JOBS,
+  getDiscipline,
+  methodsFor,
+  bestMethodAt,
+  tipsFor,
+} from "@/lib/crafting";
+import { InfoTip } from "./InfoTip";
+
+export function Crafting() {
+  const [jobId, setJobId] = useState("CUL");
+  const [level, setLevel] = useState(1);
+  const [exp, setExp] = useState<number[]>([]);
+
+  useEffect(() => {
+    fetch("/crafting/exp.json")
+      .then((r) => r.json())
+      .then(setExp)
+      .catch(() => {});
+  }, []);
+
+  const job = getDiscipline(jobId)!;
+  const methods = methodsFor(job.type);
+  const best = bestMethodAt(job.type, level);
+  const tips = tipsFor(job.type);
+  const expToNext = exp[level] ?? 0;
+
+  const otherMethods = useMemo(
+    () => methods.filter((m) => level >= m.min && level <= m.max && m !== best),
+    [methods, level, best]
+  );
+
+  return (
+    <section className="space-y-3">
+      <h3 className="section-title">
+        🔨 Crafting &amp; Gathering
+        <InfoTip text="Level any of the 8 crafting (Disciple of the Hand) or 3 gathering (Disciple of the Land) jobs. Pick a job and your level to see what to do next, the fastest method, and how much EXP the next level needs." />
+      </h3>
+
+      {/* job picker */}
+      <div className="glass space-y-3 p-4">
+        <div>
+          <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-lavender-500/70 dark:text-lavender-300/60">
+            Disciples of the Hand (crafters)
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {CRAFT_JOBS.map((j) => (
+              <JobChip key={j.id} j={j} active={j.id === jobId} onClick={() => setJobId(j.id)} />
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-lavender-500/70 dark:text-lavender-300/60">
+            Disciples of the Land (gatherers)
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {GATHER_JOBS.map((j) => (
+              <JobChip key={j.id} j={j} active={j.id === jobId} onClick={() => setJobId(j.id)} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* job summary + level */}
+      <div className="glass p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span
+              className="grid h-12 w-12 place-items-center rounded-2xl text-2xl"
+              style={{ background: `${job.color}33` }}
+            >
+              {job.emoji}
+            </span>
+            <div>
+              <div className="font-display text-lg font-bold text-slate-800 dark:text-slate-100">
+                {job.name} <span className="text-sm text-slate-400">({job.abbr})</span>
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                Makes {job.makes} · guild in <strong>{job.guild}</strong>
+              </div>
+            </div>
+          </div>
+          <span className="chip bg-lavender-100 text-lavender-700 ring-lavender-200 dark:bg-white/10 dark:text-lavender-200">
+            {job.type === "DoH" ? "Disciple of the Hand" : "Disciple of the Land"}
+          </span>
+        </div>
+
+        {/* level slider */}
+        <div className="mt-4">
+          <div className="mb-1 flex items-center justify-between">
+            <label className="label !mb-0">
+              Current {job.abbr} level{" "}
+              <InfoTip text="Each crafting/gathering job levels separately. Set this job's level to see the next-level requirement and the best method right now." />
+            </label>
+            <span className="font-display text-xl font-bold text-slate-800 dark:text-slate-100">Lv {level}</span>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={100}
+            value={level}
+            onChange={(e) => setLevel(Number(e.target.value))}
+            className="h-2 w-full cursor-pointer appearance-none rounded-full accent-lavender-500"
+            style={{ background: `linear-gradient(to right,#8b66e0 ${level}%,rgba(167,139,234,.25) ${level}%)` }}
+          />
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {[1, 20, 40, 50, 60, 70, 80, 90, 100].map((l) => (
+              <button
+                key={l}
+                onClick={() => setLevel(l)}
+                className="rounded-lg bg-white/60 px-2 py-0.5 text-[11px] font-semibold text-lavender-700 ring-1 ring-inset ring-lavender-200 hover:bg-white dark:bg-white/5 dark:text-lavender-200 dark:ring-white/10"
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* next-level requirement */}
+        <div className="mt-4 rounded-2xl bg-gradient-to-br from-cream-100/80 to-lavender-100/60 p-3 dark:from-white/[0.04] dark:to-white/[0.02]">
+          {level >= 100 ? (
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+              🎉 Level 100 — this job is maxed! Now chase Master recipes, scrips and gear.
+            </span>
+          ) : (
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+              ➡️ EXP to reach level {level + 1}:{" "}
+              <span className="font-display text-gold-600">{expToNext ? expToNext.toLocaleString() : "…"}</span> EXP
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* recommended next step */}
+      {best && level < 100 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass border-l-4 border-l-emerald-400 p-4">
+          <div className="text-[11px] font-bold uppercase tracking-widest text-emerald-600">⭐ Best method right now (Lv {level})</div>
+          <div className="mt-1 font-display text-lg font-bold text-slate-800 dark:text-slate-100">{best.name}</div>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{best.detail}</p>
+        </motion.div>
+      )}
+
+      {/* other methods available now */}
+      {otherMethods.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="px-1 text-sm font-bold text-slate-700 dark:text-slate-200">Also good at Lv {level}</h4>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {otherMethods.map((m) => (
+              <div key={m.name} className="glass p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{m.name}</span>
+                  <span className="chip bg-slate-100 text-slate-500 ring-slate-200 dark:bg-white/10 dark:text-slate-300">
+                    Lv {m.min}–{m.max}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{m.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* full route timeline */}
+      <div className="glass p-4">
+        <h4 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-200">
+          🗺️ Full {job.abbr} leveling route
+          <InfoTip text="Every method and the level range it's good for. Combine them: always do class quests + the best method for your tier, topped up with dailies." />
+        </h4>
+        <ol className="relative space-y-3 border-l-2 border-lavender-200/70 pl-5 dark:border-white/10">
+          {methods.map((m, i) => {
+            const activeNow = level >= m.min && level <= m.max;
+            return (
+              <li key={i} className="relative">
+                <span className={clsx("absolute -left-[27px] grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold", activeNow ? "bg-emerald-400 text-white" : "bg-lavender-300 text-white")}>
+                  {m.best ? "⭐" : "·"}
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={clsx("font-semibold", activeNow ? "text-slate-800 dark:text-slate-100" : "text-slate-500 dark:text-slate-400")}>{m.name}</span>
+                  <span className="chip bg-lavender-100 text-lavender-700 ring-lavender-200 dark:bg-white/10 dark:text-lavender-200">Lv {m.min}–{m.max}</span>
+                  {activeNow && <span className="chip bg-emerald-100 text-emerald-700 ring-emerald-200">available now</span>}
+                </div>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{m.detail}</p>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      {/* noob tips */}
+      <div className="glass p-4">
+        <h4 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-200">
+          🐣 New to {job.type === "DoH" ? "crafting" : "gathering"}? Read this
+          <InfoTip text="The essentials so you don't waste time or gil while leveling this discipline." />
+        </h4>
+        <ul className="space-y-1.5">
+          {tips.map((t, i) => (
+            <li key={i} className="flex gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <span className="text-emerald-500">✓</span> {t}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function JobChip({ j, active, onClick }: { j: { id: string; name: string; emoji: string }; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        "flex items-center gap-1.5 rounded-2xl px-2.5 py-1.5 text-xs font-semibold ring-1 ring-inset transition-all",
+        active
+          ? "bg-gradient-to-r from-lavender-500 to-lavender-400 text-white ring-transparent shadow-soft"
+          : "bg-white/70 text-slate-600 ring-lavender-200/70 hover:bg-white dark:bg-white/5 dark:text-slate-200 dark:ring-white/10"
+      )}
+    >
+      <span>{j.emoji}</span> {j.name}
+    </button>
+  );
+}
