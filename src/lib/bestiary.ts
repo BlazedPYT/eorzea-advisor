@@ -62,6 +62,14 @@ export interface EnrichedLocation extends RawLocation {
   image: string;
   sizeFactor: number;
   aetheryte: Aetheryte | null;
+  approx?: boolean; // true when we know the zone but not exact spawn coords
+}
+
+interface ZoneInfo {
+  mapId: number;
+  image: string;
+  sizeFactor: number;
+  aetheryte: string | null;
 }
 
 export interface BestiaryEntry {
@@ -80,6 +88,9 @@ interface Data {
   maps: Record<string, MapMeta>;
   aetherytes: Record<string, Aetheryte[]>;
   zones: ZoneOption[];
+  mobNames: Record<string, string>;
+  garlandLocations: Record<string, string>;
+  zoneIndex: Record<string, ZoneInfo>;
   index: { key: string; lname: string; hit: SearchHit }[];
 }
 
@@ -93,12 +104,17 @@ async function readJson<T>(file: string): Promise<T> {
 function load(): Promise<Data> {
   if (cache) return cache;
   cache = (async () => {
-    const [entries, maps, aetherytes, zones] = await Promise.all([
-      readJson<Record<string, RawEntry>>("entries.json"),
-      readJson<Record<string, MapMeta>>("maps.json"),
-      readJson<Record<string, Aetheryte[]>>("aetherytes.json"),
-      readJson<ZoneOption[]>("zones.json"),
-    ]);
+    const [entries, maps, aetherytes, zones, mobNames, garlandLocations, zoneIndex] =
+      await Promise.all([
+        readJson<Record<string, RawEntry>>("entries.json"),
+        readJson<Record<string, MapMeta>>("maps.json"),
+        readJson<Record<string, Aetheryte[]>>("aetherytes.json"),
+        readJson<ZoneOption[]>("zones.json"),
+        readJson<Record<string, string>>("mob-names.json").catch(() => ({})),
+        readJson<Record<string, string>>("garland-locations.json").catch(() => ({})),
+        readJson<Record<string, ZoneInfo>>("zone-index.json").catch(() => ({})),
+      ]);
+
     const index = Object.entries(entries).map(([key, e]) => ({
       key,
       lname: e.name.toLowerCase(),
@@ -110,7 +126,20 @@ function load(): Promise<Data> {
         subtitle: e.title || e.locations[0]?.zone || "",
       } as SearchHit,
     }));
-    return { entries, maps, aetherytes, zones, index };
+
+    // Add every named mob that isn't already a positioned entry, so search is
+    // comprehensive (coordinate-less mobs are enriched on open).
+    for (const [id, name] of Object.entries(mobNames)) {
+      const key = `mob:${id}`;
+      if (entries[key]) continue;
+      index.push({
+        key,
+        lname: name.toLowerCase(),
+        hit: { key, id: Number(id), type: "mob", name, subtitle: "Monster" },
+      });
+    }
+
+    return { entries, maps, aetherytes, zones, mobNames, garlandLocations, zoneIndex, index };
   })();
   return cache;
 }
@@ -159,10 +188,70 @@ function nearestAetheryte(
   return best;
 }
 
+// Best-effort live lookup (Garland) for a mob with no Mappy coordinates:
+// resolves level + zone, bridged to our map/aetheryte by zone name.
+const enrichCache = new Map<string, BestiaryEntry>();
+
+async function enrichPositionless(
+  data: Data,
+  key: string,
+  id: number,
+  name: string
+): Promise<BestiaryEntry> {
+  if (enrichCache.has(key)) return enrichCache.get(key)!;
+  let level: number | null = null;
+  let zoneName = "";
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 6000);
+    const res = await fetch(
+      `https://garlandtools.org/api/search.php?text=${encodeURIComponent(name)}&lang=en`,
+      { signal: ctrl.signal, headers: { "User-Agent": "EorzeaAdvisor/1.0" } }
+    );
+    clearTimeout(t);
+    const arr = (await res.json()) as { type: string; obj: { n: string; l?: number | string; z?: number } }[];
+    const hit =
+      arr.find((r) => r.type === "mob" && r.obj.n?.toLowerCase() === name.toLowerCase()) ||
+      arr.find((r) => r.type === "mob");
+    if (hit) {
+      level = hit.obj.l != null ? Number(hit.obj.l) || null : null;
+      zoneName = (hit.obj.z != null && data.garlandLocations[String(hit.obj.z)]) || "";
+    }
+  } catch {
+    /* offline / Garland down — fall back to name only */
+  }
+
+  const zinfo = zoneName ? data.zoneIndex[zoneName.toLowerCase()] : undefined;
+  const locations: EnrichedLocation[] = zinfo
+    ? [
+        {
+          mapId: zinfo.mapId,
+          zone: zoneName,
+          points: [],
+          image: zinfo.image,
+          sizeFactor: zinfo.sizeFactor,
+          approx: true,
+          aetheryte: zinfo.aetheryte ? { name: zinfo.aetheryte, x: 0, y: 0, type: 0 } : null,
+        },
+      ]
+    : [];
+  const entry: BestiaryEntry = { key, id, type: "mob", name, level, locations };
+  enrichCache.set(key, entry);
+  return entry;
+}
+
 export async function getEntry(key: string): Promise<BestiaryEntry | null> {
   const data = await load();
   const e = data.entries[key];
-  if (!e) return null;
+  if (!e) {
+    // Coordinate-less mob: comprehensive search found the name; enrich live.
+    if (key.startsWith("mob:")) {
+      const id = Number(key.slice(4));
+      const name = data.mobNames[String(id)];
+      if (name) return enrichPositionless(data, key, id, name);
+    }
+    return null;
+  }
   const locations: EnrichedLocation[] = e.locations.map((loc) => {
     const meta = data.maps[String(loc.mapId)];
     const center = loc.points[0] ?? { x: 0, y: 0 };

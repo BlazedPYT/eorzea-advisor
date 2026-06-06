@@ -17,6 +17,7 @@ interface Loc {
   image: string;
   sizeFactor: number;
   aetheryte: Aetheryte | null;
+  approx?: boolean;
 }
 interface Entry {
   key: string;
@@ -91,18 +92,20 @@ export function Locator() {
 
   const travel = useMemo(() => {
     if (!loc) return null;
+    const here = currentMapId !== "" && Number(currentMapId) === loc.mapId;
     const center = loc.points[0];
-    const where = `(X: ${center?.x}, Y: ${center?.y})`;
+
+    // Coordinate-less mob: we know the zone, not the exact spot.
+    if (loc.approx || !center) {
+      if (here) return { icon: "✅", text: `You're already in ${loc.zone}! This monster roams here — its exact spawn isn't recorded in the community map data.` };
+      if (loc.aetheryte) return { icon: "🔮", text: `Teleport to the ${loc.aetheryte.name} aetheryte in ${loc.zone}, then explore — exact spawn coordinates aren't recorded for this one.` };
+      return { icon: "🧭", text: `Found in ${loc.zone}. Exact spawn coordinates aren't recorded for this monster.` };
+    }
+
+    const where = `(X: ${center.x}, Y: ${center.y})`;
     const multi = loc.points.length > 1 ? ` — it appears at ${loc.points.length} spots here` : "";
-    if (currentMapId !== "" && Number(currentMapId) === loc.mapId) {
-      return { icon: "✅", text: `You're already in ${loc.zone}! Head to ${where}${multi}.` };
-    }
-    if (loc.aetheryte) {
-      return {
-        icon: "🔮",
-        text: `Teleport to the ${loc.aetheryte.name} aetheryte in ${loc.zone}, then make your way to ${where}${multi}.`,
-      };
-    }
+    if (here) return { icon: "✅", text: `You're already in ${loc.zone}! Head to ${where}${multi}.` };
+    if (loc.aetheryte) return { icon: "🔮", text: `Teleport to the ${loc.aetheryte.name} aetheryte in ${loc.zone}, then make your way to ${where}${multi}.` };
     return { icon: "🧭", text: `Travel to ${loc.zone}, then head to ${where}${multi}. (No aetheryte here — you may need a quest, airship or ferry.)` };
   }, [loc, currentMapId]);
 
@@ -276,14 +279,19 @@ function MapView({ loc, name }: { loc: Loc; name: string }) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={loc.image} alt={`${loc.zone} map`} className="block aspect-square w-full object-cover" loading="lazy" />
-        {/* aetheryte marker */}
-        {loc.aetheryte && (
+        {/* markers only when we have real coordinates */}
+        {!loc.approx && loc.aetheryte && (
           <Marker x={loc.aetheryte.x} y={loc.aetheryte.y} sizeFactor={loc.sizeFactor} kind="aetheryte" label={loc.aetheryte.name} />
         )}
-        {/* target X markers */}
-        {loc.points.map((p, i) => (
-          <Marker key={i} x={p.x} y={p.y} sizeFactor={loc.sizeFactor} kind="target" label={`${name} (${p.x}, ${p.y})`} />
-        ))}
+        {!loc.approx &&
+          loc.points.map((p, i) => (
+            <Marker key={i} x={p.x} y={p.y} sizeFactor={loc.sizeFactor} kind="target" label={`${name} (${p.x}, ${p.y})`} />
+          ))}
+        {loc.approx && (
+          <div className="absolute inset-x-0 bottom-0 bg-slate-900/70 px-3 py-2 text-center text-[11px] font-semibold text-white">
+            Roams {loc.zone} · exact spawn coordinates aren’t recorded by the community map project
+          </div>
+        )}
       </div>
     </div>
   );

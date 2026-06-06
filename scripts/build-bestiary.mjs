@@ -35,6 +35,20 @@ async function main() {
     getJson("shops-by-npc"),
   ]);
 
+  // Garland core data → location id → name (to name zones for mobs that have no
+  // Mappy coordinates but that Garland still knows a zone for).
+  process.stdout.write("  ↓ Garland locationIndex … ");
+  let garlandLocations = {};
+  try {
+    const core = await (await fetch("https://www.garlandtools.org/db/doc/core/en/3/data.json")).json();
+    for (const [id, v] of Object.entries(core.locationIndex || {})) {
+      if (v?.name) garlandLocations[id] = v.name;
+    }
+    console.log(`ok (${Object.keys(garlandLocations).length})`);
+  } catch {
+    console.log("skipped (offline)");
+  }
+
   const placeName = (id) => (id && places[id] && places[id].en) || "";
 
   // --- maps: id -> { image, sizeFactor, offsetX, offsetY, zone } ---
@@ -140,14 +154,44 @@ async function main() {
   // teleportable zones list for the "where are you?" picker
   const zones = Array.from(zoneSet.values()).sort((a, b) => a.zone.localeCompare(b.zone));
 
+  // ALL named mobs (for comprehensive search, incl. ones without coordinates)
+  const mobNames = {};
+  for (const [id, v] of Object.entries(mobs)) {
+    if (v?.en?.trim()) mobNames[id] = v.en;
+  }
+
+  // zone-name (lowercased) -> { mapId, image, sizeFactor, aetheryte } so we can
+  // show a zone map + travel for coordinate-less mobs, bridged by name.
+  const zoneIndex = {};
+  for (const z of zoneSet.values()) {
+    const m = maps[String(z.mapId)];
+    zoneIndex[z.zone.toLowerCase()] = {
+      mapId: z.mapId,
+      image: m?.image ?? "",
+      sizeFactor: m?.sizeFactor ?? 100,
+      aetheryte: z.aetheryte,
+    };
+  }
+  for (const [id, m] of Object.entries(maps)) {
+    const key = m.zone.toLowerCase();
+    if (!zoneIndex[key]) {
+      zoneIndex[key] = { mapId: Number(id), image: m.image, sizeFactor: m.sizeFactor, aetheryte: null };
+    }
+  }
+
   await mkdir(OUT, { recursive: true });
   await writeFile(path.join(OUT, "entries.json"), JSON.stringify(entries));
   await writeFile(path.join(OUT, "maps.json"), JSON.stringify(maps));
   await writeFile(path.join(OUT, "aetherytes.json"), JSON.stringify(aetherytesByMap));
   await writeFile(path.join(OUT, "zones.json"), JSON.stringify(zones));
+  await writeFile(path.join(OUT, "mob-names.json"), JSON.stringify(mobNames));
+  await writeFile(path.join(OUT, "garland-locations.json"), JSON.stringify(garlandLocations));
+  await writeFile(path.join(OUT, "zone-index.json"), JSON.stringify(zoneIndex));
 
   console.log(
-    `\n✓ Bestiary built → public/bestiary/\n  mobs: ${mobCount}  npcs: ${npcCount}  vendors: ${vendorCount}  maps: ${
+    `\n✓ Bestiary built → public/bestiary/\n  positioned mobs: ${mobCount}  all named mobs: ${
+      Object.keys(mobNames).length
+    }  npcs: ${npcCount}  vendors: ${vendorCount}  maps: ${
       Object.keys(maps).length
     }  zones: ${zones.length}`
   );
