@@ -6,66 +6,62 @@ banner they click to update. No retyping, no command line for them.
 
 ---
 
-## TL;DR
+## TL;DR — publishing an update (recommended: GitHub Action)
+
+You don't need a token or a local build. Just bump the version and push a tag:
 
 ```bash
-# Build the installer (output lands in the "CLIENT FOR HALP" folder)
-npm run desktop:build
-
-# Publish an update so friends get the in-app update banner
-#   1. bump "version" in package.json (e.g. 1.0.0 -> 1.0.1)
-#   2. set your GitHub token (see below), then:
-npm run desktop:publish
+# 1. bump "version" in package.json (e.g. 1.2.0 -> 1.2.1)
+# 2. commit it
+git commit -am "v1.2.1"
+# 3. tag with the SAME version and push the tag
+git tag v1.2.1
+git push origin main --tags
 ```
 
-The thing you send friends is:
+GitHub then builds the Windows installer on its own runner and **publishes the
+release automatically** (see `.github/workflows/release.yml`). Within ~30 minutes
+(or on next launch) every friend's app shows the **"Update & restart"** banner.
+
+The thing you send NEW friends is still the installer file:
 
 ```
 CLIENT FOR HALP/Eorzea Advisor Setup <version>.exe
 ```
+(produced by `npm run desktop:build`, or downloadable from the GitHub Release).
 
 ---
 
-## One-time setup for auto-updates (GitHub Releases)
+## How the auto-publish works
 
-Auto-updates are wired to **GitHub Releases** (free, reliable).
+`.github/workflows/release.yml` runs on any `v*` tag and:
+1. checks the tag matches `package.json` version (fails loudly if not),
+2. `npm ci` + `npm run desktop:assemble` (Next standalone build),
+3. `electron-builder --publish always` using the workflow's built-in
+   `GITHUB_TOKEN` — no personal token, no secrets to manage,
+4. flips the release from draft → published and marks it **latest**.
 
-1. **Create a free GitHub repo** named `eorzea-advisor` (can be private — see note).
-2. **`package.json` → `build.publish`** is already set to your account:
-   ```json
-   "publish": [
-     { "provider": "github", "owner": "BlazedPYT", "repo": "eorzea-advisor" }
-   ]
-   ```
-3. **Create a GitHub personal access token** with `repo` scope:
-   GitHub → Settings → Developer settings → Personal access tokens → *Tokens (classic)* →
-   Generate new token → tick **repo** → copy it.
-4. **Set the token** in your terminal before publishing:
-   - PowerShell: `$env:GH_TOKEN = "<your-personal-access-token>"`
-   - (electron-builder reads `GH_TOKEN` automatically.)
+The build config (`package.json → build.publish`) targets your public repo:
+```json
+"publish": [{ "provider": "github", "owner": "BlazedPYT", "repo": "eorzea-advisor" }]
+```
 
-> **Private repo note:** auto-update from a *private* repo needs the client to send
-> the token too, which you don't want to ship. For sending to friends, use a
-> **public** repo for releases (the code can stay private elsewhere). Simplest path:
-> make `eorzea-advisor` public — it only needs to hold the release files.
+> The repo must be **public** so friends' apps can fetch updates without a token.
 
 ---
 
-## Publishing a new version (the friend-facing update)
+## Manual publish (fallback, needs a token)
 
-1. Make your changes.
-2. Bump `"version"` in `package.json` (must be higher than the last release, e.g.
-   `1.0.0` → `1.0.1`). **Auto-update only triggers when the version goes up.**
-3. Run:
-   ```bash
+If you ever want to publish from your own machine instead of via a tag:
+
+1. Bump `"version"` in `package.json` (must be higher than the last release).
+2. Create a GitHub personal access token (Settings → Developer settings → Tokens
+   (classic) → scope **repo**).
+3. ```bash
+   $env:GH_TOKEN = "<your-token>"   # PowerShell
    npm run desktop:publish
    ```
-   This rebuilds the app and uploads `Eorzea Advisor Setup <v>.exe`, its `.blockmap`,
-   and `latest.yml` to a GitHub Release (created as a draft).
-4. Go to your repo → **Releases**, and **publish** the draft release.
-5. Done. Within ~30 minutes (or on next launch) every friend's app detects the new
-   version, downloads it in the background, and shows the **"Update ready → Update now"**
-   banner. Clicking it installs and relaunches.
+4. Repo → **Releases** → publish the drafted release. Then revoke the token.
 
 ---
 
