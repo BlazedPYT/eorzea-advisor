@@ -10,6 +10,7 @@ import { MarketBoard } from "./MarketBoard";
 import { MarketSettings } from "./MarketSettings";
 import { DailyChecklist } from "./DailyChecklist";
 import { Locator } from "./Locator";
+import { Leves } from "./Leves";
 import { InfoTip } from "./InfoTip";
 import {
   FoodReminder,
@@ -23,6 +24,7 @@ type TabId =
   | "all"
   | "dailies"
   | "locator"
+  | "leves"
   | "gear"
   | "leveling"
   | "market"
@@ -54,6 +56,7 @@ const GOAL_DEFAULT_TAB: Record<Goal, TabId> = {
 const QUICK_QUESTIONS: { q: string; tab: TabId }[] = [
   { q: "What are my dailies?", tab: "dailies" },
   { q: "Where do I find a monster?", tab: "locator" },
+  { q: "Show me leves to grind", tab: "leves" },
   { q: "What gear should I buy?", tab: "gear" },
   { q: "What should I run next?", tab: "leveling" },
   { q: "How do I save gil?", tab: "gil" },
@@ -91,6 +94,14 @@ export function Dashboard({
         blurb: "Find any monster, NPC or vendor on the map — with travel directions.",
         keywords: ["monster", "mob", "npc", "vendor", "where", "find", "location", "map", "spawn", "travel", "aetheryte", "teleport", "locate"],
         node: <Locator />,
+      },
+      {
+        id: "leves",
+        label: "Leves",
+        emoji: "📜",
+        blurb: "Every levequest — filter by job & level, see the issuer on the map + travel.",
+        keywords: ["leve", "leves", "levequest", "levemete", "allowance", "tradecraft", "battlecraft", "fieldcraft", "guildleve", "repeatable"],
+        node: <Leves />,
       },
       {
         id: "gear",
