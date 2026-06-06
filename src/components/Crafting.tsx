@@ -12,17 +12,27 @@ import {
   tipsFor,
 } from "@/lib/crafting";
 import { InfoTip } from "./InfoTip";
+import { useMarket } from "./MarketModal";
+
+interface LeveLite {
+  name: string;
+  level: number;
+  type: string;
+  levemete: string | null;
+  issueZone: string | null;
+  required: { id: number; name: string; count: number; ingredients?: { id: number; name: string; amount: number }[] }[];
+}
 
 export function Crafting() {
+  const market = useMarket();
   const [jobId, setJobId] = useState("CUL");
   const [level, setLevel] = useState(1);
   const [exp, setExp] = useState<number[]>([]);
+  const [leves, setLeves] = useState<LeveLite[]>([]);
 
   useEffect(() => {
-    fetch("/crafting/exp.json")
-      .then((r) => r.json())
-      .then(setExp)
-      .catch(() => {});
+    fetch("/crafting/exp.json").then((r) => r.json()).then(setExp).catch(() => {});
+    fetch("/leves/leves.json").then((r) => r.json()).then(setLeves).catch(() => {});
   }, []);
 
   const job = getDiscipline(jobId)!;
@@ -35,6 +45,18 @@ export function Crafting() {
     () => methods.filter((m) => level >= m.min && level <= m.max && m !== best),
     [methods, level, best]
   );
+
+  // Craft-by-level route: one representative tradecraft leve per level tier for
+  // this crafter, with the item to craft + its materials (Market Board links).
+  const craftRoute = useMemo(() => {
+    if (job.type !== "DoH") return [];
+    const mine = leves
+      .filter((l) => l.type === job.name && l.required.length > 0)
+      .sort((a, b) => a.level - b.level);
+    const byLevel = new Map<number, LeveLite>();
+    for (const l of mine) if (!byLevel.has(l.level)) byLevel.set(l.level, l);
+    return Array.from(byLevel.values());
+  }, [leves, job]);
 
   return (
     <section className="space-y-3">
@@ -144,6 +166,61 @@ export function Crafting() {
           <div className="mt-1 font-display text-lg font-bold text-slate-800 dark:text-slate-100">{best.name}</div>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{best.detail}</p>
         </motion.div>
+      )}
+
+      {/* craft-by-level route (DoH) */}
+      {craftRoute.length > 0 && (
+        <div className="glass p-4">
+          <h4 className="mb-1 flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-200">
+            🧑‍🍳 Craft-by-level route for {job.name}
+            <InfoTip text="The fastest path: at each level, craft the leve turn-in item and hand it to the levemete (triple turn-in HQ when possible). Tap the item or a material to see live Market Board prices — craft them or buy them." />
+          </h4>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+            At each level, craft the item below and turn it in as a levequest (see the Leves tab
+            for the issuer + map). Tap any item/material for live Market Board prices.
+          </p>
+          <ol className="relative space-y-3 border-l-2 border-lavender-200/70 pl-5 dark:border-white/10">
+            {craftRoute.map((l) => {
+              const r = l.required[0];
+              const done = level > l.level + 4;
+              const here = level >= l.level && level <= l.level + 4;
+              return (
+                <li key={l.level} className="relative">
+                  <span className={clsx("absolute -left-[30px] grid h-6 w-6 place-items-center rounded-full text-[10px] font-bold", done ? "bg-emerald-400 text-white" : here ? "bg-gold-400 text-gold-900" : "bg-lavender-400 text-white")}>
+                    {done ? "✓" : l.level}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="chip bg-lavender-100 text-lavender-700 ring-lavender-200 dark:bg-white/10 dark:text-lavender-200">Lv {l.level}</span>
+                    <button
+                      onClick={() => market.openItem(r.id, r.name)}
+                      className="font-semibold text-slate-800 underline-offset-2 hover:underline dark:text-slate-100"
+                    >
+                      🛠️ Craft {r.count}× {r.name} 🔎
+                    </button>
+                    {here && <span className="chip bg-gold-300/40 text-gold-600 ring-gold-300/60">do this now</span>}
+                  </div>
+                  {r.ingredients && r.ingredients.length > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-semibold text-slate-400">mats:</span>
+                      {r.ingredients.map((g) => (
+                        <button
+                          key={g.id}
+                          onClick={() => market.openItem(g.id, g.name)}
+                          className="rounded-lg bg-white/60 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-inset ring-lavender-200/70 hover:bg-white dark:bg-white/10 dark:text-slate-200 dark:ring-white/10"
+                        >
+                          {g.amount}× {g.name} 🔎
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-0.5 text-[11px] text-slate-400">
+                    turn in to {l.levemete} · {l.issueZone}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       )}
 
       {/* other methods available now */}

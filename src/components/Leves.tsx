@@ -25,7 +25,12 @@ interface Leve {
   exp: number;
   allowance: number;
   expPerAllowance: number;
-  required: { id: number; name: string; count: number }[];
+  required: {
+    id: number;
+    name: string;
+    count: number;
+    ingredients?: { id: number; name: string; amount: number }[];
+  }[];
   repeats: number;
 }
 interface ZoneOption { mapId: number; zone: string; aetheryte: string }
@@ -221,18 +226,35 @@ export function Leves() {
                   📦 Bring / turn in
                   <InfoTip text="Tradecraft leves require you to hand in crafted item(s). Craft them yourself, or buy them (or their materials) on the Market Board — tap a item to see live prices in-app." />
                 </div>
-                <ul className="mt-2 space-y-1.5">
+                <ul className="mt-2 space-y-2">
                   {open.required.map((r) => (
-                    <li key={r.id} className="flex items-center justify-between gap-2 rounded-xl bg-white/60 px-3 py-2 dark:bg-white/5">
-                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        {r.count}× {r.name}
-                      </span>
-                      <button
-                        onClick={() => market.openItem(r.id, r.name)}
-                        className="shrink-0 rounded-lg bg-lavender-100 px-2.5 py-1 text-[11px] font-semibold text-lavender-700 ring-1 ring-inset ring-lavender-200 hover:bg-lavender-200 dark:bg-white/10 dark:text-lavender-200 dark:ring-white/10"
-                      >
-                        🔎 Buy on Market Board
-                      </button>
+                    <li key={r.id} className="rounded-xl bg-white/60 px-3 py-2 dark:bg-white/5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                          🛠️ Craft {r.count}× {r.name}
+                        </span>
+                        <button
+                          onClick={() => market.openItem(r.id, r.name)}
+                          className="shrink-0 rounded-lg bg-lavender-100 px-2.5 py-1 text-[11px] font-semibold text-lavender-700 ring-1 ring-inset ring-lavender-200 hover:bg-lavender-200 dark:bg-white/10 dark:text-lavender-200 dark:ring-white/10"
+                        >
+                          🔎 buy finished
+                        </button>
+                      </div>
+                      {r.ingredients && r.ingredients.length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] font-semibold text-amber-700/80 dark:text-amber-300/80">Materials:</span>
+                          {r.ingredients.map((g) => (
+                            <button
+                              key={g.id}
+                              onClick={() => market.openItem(g.id, g.name)}
+                              title="See Market Board price"
+                              className="rounded-lg bg-white/70 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-inset ring-lavender-200/70 hover:bg-white dark:bg-white/10 dark:text-slate-200 dark:ring-white/10"
+                            >
+                              {g.amount}× {g.name} 🔎
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

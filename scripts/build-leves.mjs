@@ -92,6 +92,51 @@ async function main() {
   }
   console.log("");
 
+  // 2c) recipe ingredients for each leve turn-in item (what to craft / buy).
+  const leveItemIds = new Set();
+  for (const v of Object.values(reqByData)) for (const it of v.required) leveItemIds.add(it.id);
+  console.log(`Resolving recipes for ${leveItemIds.size} leve items…`);
+  const ingByResult = {};
+  let rAfter = null;
+  for (let page = 0; page < 40; page++) {
+    const ap = rAfter == null ? "" : `&after=${rAfter}`;
+    const d = await getJson(
+      `${XIV}/sheet/Recipe?limit=500${ap}&fields=ItemResult@as(raw),Ingredient@as(raw),AmountIngredient`
+    );
+    const rows = d.rows || [];
+    if (!rows.length) break;
+    for (const r of rows) {
+      const rid = r.fields["ItemResult@as(raw)"];
+      if (!leveItemIds.has(rid)) continue;
+      const ids = r.fields["Ingredient@as(raw)"] || [];
+      const amts = r.fields.AmountIngredient || [];
+      const ing = [];
+      for (let j = 0; j < ids.length; j++) {
+        if (ids[j] > 0 && amts[j] > 0) ing.push({ id: ids[j], amount: amts[j] });
+      }
+      ingByResult[rid] = ing;
+    }
+    rAfter = rows[rows.length - 1].row_id;
+  }
+  // resolve ingredient names
+  const ingIds = [...new Set(Object.values(ingByResult).flat().map((g) => g.id))];
+  const nameById = {};
+  for (let i = 0; i < ingIds.length; i += 200) {
+    const chunk = ingIds.slice(i, i + 200);
+    const d = await getJson(`${XIV}/sheet/Item?rows=${chunk.join(",")}&fields=Name`);
+    for (const r of d.rows || []) nameById[r.row_id] = r.fields.Name;
+  }
+  // attach ingredients onto each required item
+  for (const v of Object.values(reqByData)) {
+    for (const it of v.required) {
+      it.ingredients = (ingByResult[it.id] || []).map((g) => ({
+        id: g.id,
+        name: nameById[g.id] || `#${g.id}`,
+        amount: g.amount,
+      }));
+    }
+  }
+
   // 3) levemete NPC id -> name + position, from the bundled bestiary data,
   //    enriched with the map image + nearest aetheryte (self-contained leves).
   const B = path.join(process.cwd(), "public", "bestiary");
