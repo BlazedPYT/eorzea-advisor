@@ -5,11 +5,25 @@
 :root {
   --bg: #f6f3ff;
   --fg: #2b2640;
+  color-scheme: light; /* native dropdowns/scrollbars follow the theme */
 }
 
 .dark {
   --bg: #14121f;
   --fg: #ece9f7;
+  color-scheme: dark;
+}
+
+/* Native <select> popup options — match the theme (Chromium/Electron) */
+select option,
+select optgroup {
+  background-color: #ffffff;
+  color: #2b2640;
+}
+.dark select option,
+.dark select optgroup {
+  background-color: #221d34;
+  color: #ece9f7;
 }
 
 html {
