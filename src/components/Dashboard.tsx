@@ -8,6 +8,7 @@ import { GearAdvisor } from "./GearAdvisor";
 import { MarketTax } from "./MarketTax";
 import { MarketBoard } from "./MarketBoard";
 import { DailyChecklist } from "./DailyChecklist";
+import { Locator } from "./Locator";
 import { InfoTip } from "./InfoTip";
 import {
   FoodReminder,
@@ -17,7 +18,16 @@ import {
   QueueAdvisor,
 } from "./AdviceSections";
 
-type TabId = "all" | "dailies" | "gear" | "leveling" | "market" | "food" | "gil" | "luxury";
+type TabId =
+  | "all"
+  | "dailies"
+  | "locator"
+  | "gear"
+  | "leveling"
+  | "market"
+  | "food"
+  | "gil"
+  | "luxury";
 
 interface Section {
   id: Exclude<TabId, "all">;
@@ -42,6 +52,7 @@ const GOAL_DEFAULT_TAB: Record<Goal, TabId> = {
 // Quick novice questions → jump to the right tab.
 const QUICK_QUESTIONS: { q: string; tab: TabId }[] = [
   { q: "What are my dailies?", tab: "dailies" },
+  { q: "Where do I find a monster?", tab: "locator" },
   { q: "What gear should I buy?", tab: "gear" },
   { q: "What should I run next?", tab: "leveling" },
   { q: "How do I save gil?", tab: "gil" },
@@ -71,6 +82,14 @@ export function Dashboard({
         blurb: "Check off your daily & weekly tasks — auto-resets on FFXIV reset.",
         keywords: ["daily", "dailies", "weekly", "checklist", "reset", "roulette", "todo", "task", "wondrous", "challenge"],
         node: <DailyChecklist profile={profile} advice={advice} />,
+      },
+      {
+        id: "locator",
+        label: "Locator",
+        emoji: "🧭",
+        blurb: "Find any monster, NPC or vendor on the map — with travel directions.",
+        keywords: ["monster", "mob", "npc", "vendor", "where", "find", "location", "map", "spawn", "travel", "aetheryte", "teleport", "locate"],
+        node: <Locator />,
       },
       {
         id: "gear",
