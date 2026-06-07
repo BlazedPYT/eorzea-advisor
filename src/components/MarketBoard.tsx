@@ -16,7 +16,7 @@ export function MarketBoard() {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState(0);
   const [cats, setCats] = useState<ItemCategory[]>([]);
-  const [items, setItems] = useState<{ id: number; name: string }[]>([]);
+  const [items, setItems] = useState<{ id: number; name: string; icon?: string | null }[]>([]);
   const [loading, setLoading] = useState(false);
   const reqId = useRef(0);
 
@@ -120,10 +120,16 @@ export function MarketBoard() {
                 <li key={it.id}>
                   <button
                     type="button"
-                    onClick={() => market.openItem(it.id, it.name)}
-                    className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/50 px-3 py-2.5 text-left transition hover:bg-white dark:bg-white/5 dark:hover:bg-white/10"
+                    onClick={() => market.openItem(it.id, it.name, it.icon ?? undefined)}
+                    className="flex w-full items-center gap-2.5 rounded-xl bg-white/50 px-3 py-2 text-left transition hover:bg-white dark:bg-white/5 dark:hover:bg-white/10"
                   >
-                    <span className="truncate text-sm font-semibold text-slate-700 dark:text-slate-100">
+                    {it.icon ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={it.icon} alt="" className="h-8 w-8 shrink-0 rounded bg-lavender-100/50 object-contain dark:bg-white/5" loading="lazy" />
+                    ) : (
+                      <span className="h-8 w-8 shrink-0 rounded bg-lavender-100/50 dark:bg-white/5" />
+                    )}
+                    <span className="flex-1 truncate text-sm font-semibold text-slate-700 dark:text-slate-100">
                       {it.name}
                     </span>
                     <span className="shrink-0 text-[11px] font-semibold text-lavender-500">

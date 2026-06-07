@@ -73,10 +73,21 @@ async function search(
  * optional category (ItemSearchCategory) filter, and only marketable items
  * (ItemSearchCategory >= 1) are returned.
  */
+export interface ItemHit {
+  id: number;
+  name: string;
+  icon: string | null;
+}
+
+function iconUrl(icon: unknown): string | null {
+  const path = (icon as { path?: string })?.path;
+  return path ? `${BASE}/asset?path=${encodeURIComponent(path)}&format=png` : null;
+}
+
 export async function searchItems(
   q: string,
   opts: { category?: number; limit?: number; lang?: string } = {}
-): Promise<{ id: number; name: string }[]> {
+): Promise<ItemHit[]> {
   const clean = q.replace(/\s+HQ$/i, "").trim();
   const limit = opts.limit ?? 20;
   const clauses: string[] = [];
@@ -86,10 +97,14 @@ export async function searchItems(
   if (clean.length < 2 && !opts.category) return []; // need a name or a category
 
   try {
-    const data = await search(clauses.join(" "), "Name", limit, opts.lang);
+    const data = await search(clauses.join(" "), "Name,Icon", limit, opts.lang);
     return (data.results ?? [])
       .filter((r) => r.fields.Name)
-      .map((r) => ({ id: r.row_id, name: r.fields.Name as string }));
+      .map((r) => ({
+        id: r.row_id,
+        name: r.fields.Name as string,
+        icon: iconUrl((r.fields as { Icon?: unknown }).Icon),
+      }));
   } catch {
     return [];
   }

@@ -6,7 +6,7 @@ import type { ItemDetail } from "@/lib/universalis";
 import { useSettings } from "./SettingsProvider";
 
 interface MarketCtx {
-  openItem: (id: number, name?: string) => void;
+  openItem: (id: number, name?: string, icon?: string) => void;
   openByName: (name: string) => void;
 }
 
@@ -39,15 +39,17 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const world = settings.homeWorld || "Aether";
   const [open, setOpen] = useState(false);
   const [name, setName] = useState<string>("");
+  const [icon, setIcon] = useState<string | null>(null);
   const [detail, setDetail] = useState<ItemDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(
-    async (id: number, label?: string) => {
+    async (id: number, label?: string, ic?: string | null) => {
       setOpen(true);
       setLoading(true);
       setDetail(null);
       if (label) setName(label);
+      setIcon(ic ?? null);
       try {
         const res = await fetch(
           `/api/universalis/item?id=${id}&world=${encodeURIComponent(world || "Aether")}`
@@ -62,7 +64,10 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
     [world]
   );
 
-  const openItem = useCallback((id: number, label?: string) => load(id, label), [load]);
+  const openItem = useCallback(
+    (id: number, label?: string, ic?: string) => load(id, label, ic),
+    [load]
+  );
 
   const openByName = useCallback(
     async (q: string) => {
@@ -76,7 +81,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
         );
         const data = await res.json();
         const first = data.items?.[0];
-        if (first) await load(first.id, first.name);
+        if (first) await load(first.id, first.name, first.icon);
         else {
           setLoading(false);
           setDetail({ itemId: 0, scope: world, listings: [], history: [], error: "Item not found" });
@@ -117,7 +122,12 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
             >
               {/* header */}
               <div className="flex items-start justify-between gap-3 border-b border-white/40 p-5 dark:border-white/10">
-                <div className="min-w-0">
+                <div className="flex min-w-0 items-start gap-3">
+                  {icon && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={icon} alt="" className="mt-0.5 h-11 w-11 shrink-0 rounded-lg bg-lavender-100/50 object-contain dark:bg-white/5" />
+                  )}
+                  <div className="min-w-0">
                   <div className="text-[11px] font-bold uppercase tracking-widest text-lavender-500/80">
                     🪙 Live Market Board
                   </div>
@@ -133,6 +143,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
                       {detail.lastUploadMs ? <span>updated {ago(detail.lastUploadMs)}</span> : null}
                     </div>
                   )}
+                  </div>
                 </div>
                 <button
                   onClick={() => setOpen(false)}
