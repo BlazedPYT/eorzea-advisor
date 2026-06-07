@@ -20,6 +20,20 @@ let appUrl = null;
 let resolveReady;
 const serverReady = new Promise((res) => (resolveReady = res));
 
+// A FIXED port keeps the app's origin (http://127.0.0.1:PORT) stable across
+// launches, so localStorage (theme, profile, settings) persists. A random port
+// would make every reopen a "new site" with empty storage.
+const FIXED_PORT = 47591;
+
+function isPortFree(port) {
+  return new Promise((resolve) => {
+    const srv = net.createServer();
+    srv.once("error", () => resolve(false));
+    srv.once("listening", () => srv.close(() => resolve(true)));
+    srv.listen(port, "127.0.0.1");
+  });
+}
+
 // --- helpers ---------------------------------------------------------------
 function getFreePort() {
   return new Promise((resolve, reject) => {
@@ -72,7 +86,9 @@ async function startServer() {
     return;
   }
 
-  const port = await getFreePort();
+  // Prefer the fixed port (stable origin → persistent localStorage); only fall
+  // back to a random free port if it's somehow occupied.
+  const port = (await isPortFree(FIXED_PORT)) ? FIXED_PORT : await getFreePort();
   const serverDir = path.join(process.resourcesPath, "server");
   const serverEntry = path.join(serverDir, "server.js");
   const dataFile = path.join(app.getPath("userData"), "eorzea.json");
@@ -237,15 +253,29 @@ function setupAutoUpdate() {
   setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 30 * 60 * 1000);
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  startServer(); // boot in background while the launcher shows
-  setupAutoUpdate();
-
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+// Single instance: a second launch focuses the existing window instead of
+// spawning another server (which would grab a different port + storage).
+const gotLock = isDev || app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
   });
-});
+
+  app.whenReady().then(() => {
+    createWindow();
+    startServer(); // boot in background while the launcher shows
+    setupAutoUpdate();
+
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+  });
+}
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
