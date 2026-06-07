@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { InfoTip } from "./InfoTip";
 
@@ -44,6 +44,27 @@ export function Mounts() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [src, setSrc] = useState("");
+  const [open, setOpen] = useState<Coll | null>(null);
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [loadingVideo, setLoadingVideo] = useState(false);
+
+  function openDetail(m: Coll) {
+    setOpen(m);
+    setVideoId(null);
+    setLoadingVideo(true);
+    const label = kind === "mounts" ? "mount" : "minion";
+    fetch(`/api/youtube?q=${encodeURIComponent(`${m.name} FFXIV ${label}`)}`)
+      .then((r) => r.json())
+      .then((d) => setVideoId(d.videoId ?? null))
+      .catch(() => setVideoId(null))
+      .finally(() => setLoadingVideo(false));
+  }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     if (cache[kind]) {
@@ -122,12 +143,14 @@ export function Mounts() {
         {loading
           ? Array.from({ length: 6 }).map((_, i) => <div key={i} className="glass shimmer h-28" />)
           : filtered.slice(0, 120).map((m, i) => (
-              <motion.div
+              <motion.button
                 key={m.id}
+                type="button"
+                onClick={() => openDetail(m)}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i, 12) * 0.02 }}
-                className="glass flex gap-3 p-3"
+                className="glass glass-hover flex gap-3 p-3 text-left"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -161,12 +184,93 @@ export function Mounts() {
                   </div>
                   {m.patch && <div className="mt-1 text-[10px] text-slate-400">patch {m.patch}</div>}
                 </div>
-              </motion.div>
+              </motion.button>
             ))}
         {!loading && filtered.length === 0 && (
           <p className="col-span-full py-6 text-center text-sm text-slate-400">No {kind} match those filters.</p>
         )}
       </div>
+
+      {/* detail: big image + in-app video */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+            onClick={() => setOpen(null)}
+          >
+            <motion.div
+              initial={{ y: 30, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 30, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass flex max-h-[90vh] w-full max-w-2xl flex-col overflow-auto rounded-t-3xl sm:rounded-3xl"
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-white/40 p-5 dark:border-white/10">
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold uppercase tracking-widest text-lavender-500/80">
+                    {kind === "mounts" ? "🐎 Mount" : "🐱 Minion"}
+                  </div>
+                  <h3 className="font-display text-xl font-bold text-slate-800 dark:text-slate-100">{open.name}</h3>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {open.sources.map((s, j) => (
+                      <span key={j} className="flex items-center gap-1 text-[11px]">
+                        <span className={clsx("chip", srcStyle(s.type))}>{s.type}</span>
+                        <span className="text-slate-500 dark:text-slate-400">{s.text}</span>
+                      </span>
+                    ))}
+                    {open.tradeable && <span className="chip bg-emerald-100 text-emerald-700 ring-emerald-200">💰 Market Board</span>}
+                    {open.patch && <span className="chip bg-slate-100 text-slate-500 ring-slate-200 dark:bg-white/10 dark:text-slate-300">patch {open.patch}</span>}
+                  </div>
+                </div>
+                <button onClick={() => setOpen(null)} className="btn-ghost shrink-0 !rounded-full !px-3 !py-1.5">✕</button>
+              </div>
+
+              <div className="space-y-4 p-5">
+                {/* big image */}
+                {open.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={open.image}
+                    alt={open.name}
+                    className="mx-auto max-h-72 w-auto rounded-2xl bg-lavender-100/40 object-contain p-2 dark:bg-white/5"
+                  />
+                )}
+                {open.description && (
+                  <p className="text-sm italic text-slate-600 dark:text-slate-300">“{open.description}”</p>
+                )}
+
+                {/* in-app video */}
+                <div>
+                  <div className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-200">
+                    ▶️ Showcase video
+                    <InfoTip text="Top YouTube result for this collectible, playing right here in the app." />
+                  </div>
+                  {loadingVideo ? (
+                    <div className="shimmer aspect-video w-full rounded-2xl bg-lavender-200/30" />
+                  ) : videoId ? (
+                    <div className="aspect-video w-full overflow-hidden rounded-2xl">
+                      <iframe
+                        className="h-full w-full"
+                        src={`https://www.youtube.com/embed/${videoId}?rel=0`}
+                        title={`${open.name} showcase`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <p className="rounded-2xl bg-slate-100/70 px-3 py-4 text-center text-sm text-slate-500 dark:bg-white/5 dark:text-slate-300">
+                      No video found (you may be offline).
+                    </p>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

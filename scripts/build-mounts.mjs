@@ -17,7 +17,7 @@ async function fetchCollection(kind) {
     id: m.id,
     name: m.name,
     icon: m.icon || null,
-    image: kind === "mounts" ? `https://ffxivcollect.com/images/mounts/${m.id}.png` : m.icon,
+    image: m.image || m.icon || null, // large render from FFXIV Collect
     sources: (m.sources || []).map((s) => ({ type: s.type, text: s.text })),
     tradeable: !!m.tradeable,
     patch: m.patch || "",
