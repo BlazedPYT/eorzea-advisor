@@ -14,6 +14,7 @@ import { Leves } from "./Leves";
 import { Crafting } from "./Crafting";
 import { Mounts } from "./Mounts";
 import { MacroGenerator } from "./MacroGenerator";
+import { News } from "./News";
 import { InfoTip } from "./InfoTip";
 import {
   FoodReminder,
@@ -30,6 +31,7 @@ type TabId =
   | "leves"
   | "crafting"
   | "macros"
+  | "news"
   | "gear"
   | "leveling"
   | "market"
@@ -64,6 +66,7 @@ const QUICK_QUESTIONS: { q: string; tab: TabId }[] = [
   { q: "Show me leves to grind", tab: "leves" },
   { q: "How do I level crafting?", tab: "crafting" },
   { q: "Make me a crafting macro", tab: "macros" },
+  { q: "Any FFXIV news?", tab: "news" },
   { q: "How do I get a mount?", tab: "luxury" },
   { q: "What gear should I buy?", tab: "gear" },
   { q: "What should I run next?", tab: "leveling" },
@@ -127,6 +130,14 @@ export function Dashboard({
         blurb: "Build a crafting rotation and get a ready-to-paste FFXIV macro.",
         keywords: ["macro", "macros", "rotation", "craft macro", "ac", "wait", "simulator", "byregot", "synthesis", "touch"],
         node: <MacroGenerator />,
+      },
+      {
+        id: "news",
+        label: "News",
+        emoji: "📰",
+        blurb: "Live FFXIV headlines, maintenance and server status from the Lodestone.",
+        keywords: ["news", "maintenance", "patch", "notes", "update", "event", "status", "server", "lodestone", "downtime"],
+        node: <News />,
       },
       {
         id: "gear",

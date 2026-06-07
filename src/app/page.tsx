@@ -14,6 +14,8 @@ import { Dashboard } from "@/components/Dashboard";
 import { MarketProvider } from "@/components/MarketModal";
 import { SettingsProvider } from "@/components/SettingsProvider";
 import { UpdateBanner } from "@/components/UpdateBanner";
+import { ResetClocks } from "@/components/ResetClocks";
+import { BackupButton } from "@/components/BackupButton";
 
 const EMPTY_PROFILE: CharacterProfile = {
   characterName: "",
@@ -132,6 +134,7 @@ export default function Home() {
           <button className="btn-ghost" onClick={loadDemo} title="Load the Scholar 54 demo">
             🎀 Demo
           </button>
+          <BackupButton />
           {isDesktop && (
             <button
               className="btn-ghost"
@@ -191,6 +194,8 @@ export default function Home() {
               estItemLevel={advice.estimatedItemLevel}
               onEdit={() => setMode("setup")}
             />
+
+            <ResetClocks />
 
             {advice.storyNote && (
               <motion.div
