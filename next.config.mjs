@@ -4,6 +4,15 @@ const nextConfig = {
   // Produce a self-contained server bundle (.next/standalone) so Electron can
   // run the app offline-of-npm with a minimal node_modules tree.
   output: "standalone",
+  // Ensure the bestiary data files ship with their serverless functions on web
+  // hosts (Vercel etc.), where they're read from the filesystem at runtime.
+  experimental: {
+    outputFileTracingIncludes: {
+      "/api/bestiary/search": ["./public/bestiary/**"],
+      "/api/bestiary/entry": ["./public/bestiary/**"],
+      "/api/bestiary/zones": ["./public/bestiary/**"],
+    },
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "xivapi.com" },

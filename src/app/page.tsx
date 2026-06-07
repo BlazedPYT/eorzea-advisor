@@ -38,8 +38,24 @@ export default function Home() {
   const [initialGear, setInitialGear] = useState<GearSnapshotData | null>(null);
   const [mode, setMode] = useState<"loading" | "setup" | "dashboard">("loading");
 
-  // Load the most recently saved profile (if any) on first paint.
+  // Load the saved profile. localStorage works on web AND desktop; we fall back
+  // to the desktop file store (and migrate it into localStorage) if present.
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem("ea-profile");
+      if (raw) {
+        const { profile: p, gear: g } = JSON.parse(raw);
+        if (p) {
+          setProfile(p);
+          setGear(g?.items ?? []);
+          setInitialGear(g ?? null);
+          setMode("dashboard");
+          return;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
     fetch("/api/profile")
       .then((r) => r.json())
       .then((data) => {
@@ -48,6 +64,11 @@ export default function Home() {
           setGear(data.gear?.items ?? []);
           setInitialGear(data.gear ?? null);
           setMode("dashboard");
+          try {
+            localStorage.setItem("ea-profile", JSON.stringify({ profile: data.profile, gear: data.gear ?? null }));
+          } catch {
+            /* ignore */
+          }
         } else {
           setMode("setup");
         }
@@ -60,22 +81,23 @@ export default function Home() {
     [profile]
   );
 
-  async function handleSave(p: CharacterProfile, snapshot?: GearSnapshotData) {
+  function handleSave(p: CharacterProfile, snapshot?: GearSnapshotData) {
     setProfile(p);
     setGear(snapshot?.items ?? []);
     setInitialGear(snapshot ?? null);
     setMode("dashboard");
+    // primary: localStorage (web + desktop)
     try {
-      const res = await fetch("/api/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile: p, gear: snapshot }),
-      });
-      const data = await res.json();
-      if (data.profile?.id) setProfile((prev) => (prev ? { ...prev, id: data.profile.id } : prev));
+      localStorage.setItem("ea-profile", JSON.stringify({ profile: p, gear: snapshot ?? null }));
     } catch {
-      /* local state still works even if DB save fails */
+      /* ignore */
     }
+    // best-effort desktop file backup (no-op on the web)
+    fetch("/api/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile: p, gear: snapshot }),
+    }).catch(() => {});
   }
 
   function loadDemo() {
