@@ -4,13 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { InfoTip } from "./InfoTip";
+import { useSettings } from "./SettingsProvider";
+import { useMarket } from "./MarketModal";
 
-interface Source { type: string; text: string }
+interface Source { type: string; text: string; level?: number | null; ilvl?: number | null }
 interface Coll {
   id: number;
   name: string;
   icon: string | null;
   image: string | null;
+  itemId: number | null;
   sources: Source[];
   tradeable: boolean;
   patch: string;
@@ -39,6 +42,8 @@ function srcStyle(t: string) {
 }
 
 export function Mounts() {
+  const { settings, fmt } = useSettings();
+  const market = useMarket();
   const [kind, setKind] = useState<"mounts" | "minions">("mounts");
   const [cache, setCache] = useState<Record<string, Coll[]>>({});
   const [loading, setLoading] = useState(true);
@@ -47,17 +52,33 @@ export function Mounts() {
   const [open, setOpen] = useState<Coll | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
+  const [price, setPrice] = useState<{ cheapest?: number; world?: string } | null>(null);
+  const [loadingPrice, setLoadingPrice] = useState(false);
 
   function openDetail(m: Coll) {
     setOpen(m);
     setVideoId(null);
     setLoadingVideo(true);
+    setPrice(null);
     const label = kind === "mounts" ? "mount" : "minion";
     fetch(`/api/youtube?q=${encodeURIComponent(`${m.name} FFXIV ${label}`)}`)
       .then((r) => r.json())
       .then((d) => setVideoId(d.videoId ?? null))
       .catch(() => setVideoId(null))
       .finally(() => setLoadingVideo(false));
+
+    // live Market Board price for tradeable collectibles
+    if (m.tradeable && m.itemId) {
+      setLoadingPrice(true);
+      fetch(`/api/universalis/item?id=${m.itemId}&world=${encodeURIComponent(settings.homeWorld || "Aether")}`)
+        .then((r) => r.json())
+        .then((d) => {
+          const l = d.listings?.[0];
+          setPrice({ cheapest: l?.price ?? d.minNq ?? d.minHq, world: l?.world });
+        })
+        .catch(() => setPrice(null))
+        .finally(() => setLoadingPrice(false));
+    }
   }
 
   useEffect(() => {
@@ -218,7 +239,10 @@ export function Mounts() {
                     {open.sources.map((s, j) => (
                       <span key={j} className="flex items-center gap-1 text-[11px]">
                         <span className={clsx("chip", srcStyle(s.type))}>{s.type}</span>
-                        <span className="text-slate-500 dark:text-slate-400">{s.text}</span>
+                        <span className="text-slate-500 dark:text-slate-400">
+                          {s.text}
+                          {s.level ? ` · ⚑ Lv ${s.level} to enter${s.ilvl ? ` (iLvl ${s.ilvl})` : ""}` : ""}
+                        </span>
                       </span>
                     ))}
                     {open.tradeable && <span className="chip bg-emerald-100 text-emerald-700 ring-emerald-200">💰 Market Board</span>}
@@ -240,6 +264,33 @@ export function Mounts() {
                 )}
                 {open.description && (
                   <p className="text-sm italic text-slate-600 dark:text-slate-300">“{open.description}”</p>
+                )}
+
+                {/* live Market Board price (tradeable) */}
+                {open.tradeable && open.itemId && (
+                  <div className="rounded-2xl bg-gradient-to-br from-cream-100/80 to-lavender-100/60 p-3 dark:from-white/[0.04] dark:to-white/[0.02]">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+                        💰 Market Board{" "}
+                        {loadingPrice ? (
+                          <span className="text-slate-400">checking price…</span>
+                        ) : price?.cheapest ? (
+                          <>
+                            <span className="font-display text-gold-600">{fmt(price.cheapest)} gil</span>
+                            {price.world ? <span className="text-slate-400"> · {price.world} 🌐</span> : null}
+                          </>
+                        ) : (
+                          <span className="text-slate-400">no current listings on {settings.homeWorld || "your DC"}</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => market.openItem(open.itemId as number, open.name, open.icon ?? undefined)}
+                        className="shrink-0 rounded-lg bg-lavender-100 px-2.5 py-1 text-[11px] font-semibold text-lavender-700 ring-1 ring-inset ring-lavender-200 hover:bg-lavender-200 dark:bg-white/10 dark:text-lavender-200 dark:ring-white/10"
+                      >
+                        🔎 View listings / buy
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 {/* in-app video */}
