@@ -13,6 +13,7 @@ import { Locator } from "./Locator";
 import { Leves } from "./Leves";
 import { Crafting } from "./Crafting";
 import { Mounts } from "./Mounts";
+import { MacroGenerator } from "./MacroGenerator";
 import { InfoTip } from "./InfoTip";
 import {
   FoodReminder,
@@ -28,6 +29,7 @@ type TabId =
   | "locator"
   | "leves"
   | "crafting"
+  | "macros"
   | "gear"
   | "leveling"
   | "market"
@@ -61,6 +63,7 @@ const QUICK_QUESTIONS: { q: string; tab: TabId }[] = [
   { q: "Where do I find a monster?", tab: "locator" },
   { q: "Show me leves to grind", tab: "leves" },
   { q: "How do I level crafting?", tab: "crafting" },
+  { q: "Make me a crafting macro", tab: "macros" },
   { q: "How do I get a mount?", tab: "luxury" },
   { q: "What gear should I buy?", tab: "gear" },
   { q: "What should I run next?", tab: "leveling" },
@@ -115,6 +118,14 @@ export function Dashboard({
         blurb: "Level any crafter or gatherer — next-level EXP, the fastest method, and tips.",
         keywords: ["craft", "crafting", "gather", "gathering", "doh", "dol", "carpenter", "blacksmith", "armorer", "goldsmith", "leatherworker", "weaver", "alchemist", "culinarian", "miner", "botanist", "fisher", "profession", "level"],
         node: <Crafting />,
+      },
+      {
+        id: "macros",
+        label: "Macros",
+        emoji: "🧪",
+        blurb: "Build a crafting rotation and get a ready-to-paste FFXIV macro.",
+        keywords: ["macro", "macros", "rotation", "craft macro", "ac", "wait", "simulator", "byregot", "synthesis", "touch"],
+        node: <MacroGenerator />,
       },
       {
         id: "gear",
