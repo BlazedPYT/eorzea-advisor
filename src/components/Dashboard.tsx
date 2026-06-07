@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import type { AdvisorResult, CharacterProfile, GearItem, Goal } from "@/lib/types";
@@ -85,9 +85,26 @@ export function Dashboard({
   gear: GearItem[];
   advice: AdvisorResult;
 }) {
-  const [tab, setTab] = useState<TabId>(GOAL_DEFAULT_TAB[profile.goal] ?? "leveling");
+  const VALID_TABS: TabId[] = ["all", "dailies", "locator", "leves", "crafting", "macros", "news", "gear", "leveling", "market", "food", "gil", "luxury"];
+  const initialTab = (): TabId => {
+    if (typeof window !== "undefined") {
+      const h = window.location.hash.replace("#", "") as TabId;
+      if (VALID_TABS.includes(h)) return h;
+    }
+    return GOAL_DEFAULT_TAB[profile.goal] ?? "leveling";
+  };
+  const [tab, setTab] = useState<TabId>(initialTab);
   const [query, setQuery] = useState("");
   const [splitTab, setSplitTab] = useState<TabId | null>(null);
+
+  // Keep the URL hash in sync so links like .../#mounts open that tab (shareable).
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") history.replaceState(null, "", `#${tab}`);
+    } catch {
+      /* ignore */
+    }
+  }, [tab]);
 
   const sections: Section[] = useMemo(
     () => [

@@ -1,0 +1,17 @@
+{
+  "name": "Eorzea Advisor",
+  "short_name": "Eorzea",
+  "description": "A cozy FFXIV companion — gear, leves, crafting, mounts, market prices and more, for any job and level.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#14121f",
+  "theme_color": "#8b66e0",
+  "categories": ["games", "utilities"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

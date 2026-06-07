@@ -16,6 +16,7 @@ import { SettingsProvider } from "@/components/SettingsProvider";
 import { UpdateBanner } from "@/components/UpdateBanner";
 import { ResetClocks } from "@/components/ResetClocks";
 import { BackupButton } from "@/components/BackupButton";
+import { ShareButton } from "@/components/ShareButton";
 
 const EMPTY_PROFILE: CharacterProfile = {
   characterName: "",
@@ -135,6 +136,7 @@ export default function Home() {
             🎀 Demo
           </button>
           <BackupButton />
+          <ShareButton />
           {isDesktop && (
             <button
               className="btn-ghost"
