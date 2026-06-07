@@ -211,8 +211,10 @@
             $("uBar").style.width = "100%";
             $("install").style.display = "inline-flex"; break;
           case "none":
-            show(true); $("uTitle").textContent = "You're on the latest version ✓";
-            setTimeout(() => { if (updateStatus === "none") show(false); }, 3000); break;
+            show(true);
+            $("uTitle").textContent = "You're on the latest version" + (s.version ? " (v" + s.version + ")" : "") + " ✓";
+            $("uBar").style.width = "0%";
+            setTimeout(() => { if (updateStatus === "none") show(false); }, 6000); break;
           case "error":
             show(true); $("uTitle").textContent = "Couldn't check for updates — " + (s.message || "offline?"); break;
           case "dev":
@@ -248,7 +250,12 @@
         }
       });
 
-      $("check").addEventListener("click", () => E && E.checkForUpdates());
+      $("check").addEventListener("click", () => {
+        if (!E) return;
+        // Immediate feedback so the button never feels dead.
+        renderUpdate({ status: "checking" });
+        E.checkForUpdates();
+      });
       $("quit").addEventListener("click", () => E && E.quit());
       $("install").addEventListener("click", () => E && E.installUpdate());
     </script>
