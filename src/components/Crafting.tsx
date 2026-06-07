@@ -20,8 +20,18 @@ interface LeveLite {
   type: string;
   levemete: string | null;
   issueZone: string | null;
-  required: { id: number; name: string; count: number; ingredients?: { id: number; name: string; amount: number }[] }[];
+  required: {
+    id: number;
+    name: string;
+    count: number;
+    craftLevel?: number | null;
+    ingredients?: { id: number; name: string; amount: number }[];
+  }[];
 }
+
+// The level you can actually craft a leve's turn-in item (falls back to the
+// leve's pickup level when no recipe level is known).
+const craftLvlOf = (l: LeveLite) => l.required[0]?.craftLevel || l.level;
 
 export function Crafting() {
   const market = useMarket();
@@ -55,10 +65,14 @@ export function Crafting() {
     if (job.type !== "DoH") return [];
     const mine = leves
       .filter((l) => l.type === job.name && l.required.length > 0)
-      .sort((a, b) => a.level - b.level);
+      .sort((a, b) => craftLvlOf(a) - craftLvlOf(b));
+    // one representative per *craft* level (the level you can actually make it)
     const byLevel = new Map<number, LeveLite>();
-    for (const l of mine) if (!byLevel.has(l.level)) byLevel.set(l.level, l);
-    return Array.from(byLevel.values());
+    for (const l of mine) {
+      const cl = craftLvlOf(l);
+      if (!byLevel.has(cl)) byLevel.set(cl, l);
+    }
+    return Array.from(byLevel.values()).sort((a, b) => craftLvlOf(a) - craftLvlOf(b));
   }, [leves, job]);
 
   // Aggregated shopping list: total materials to craft the recommended leve
@@ -68,7 +82,8 @@ export function Crafting() {
     const crystals = new Map<number, { name: string; qty: number }>();
     let crafts = 0;
     for (const l of craftRoute) {
-      if (l.level < matMin || l.level > matMax) continue;
+      const cl = craftLvlOf(l);
+      if (cl < matMin || cl > matMax) continue;
       for (const r of l.required) {
         crafts += 1;
         const times = (r.count || 1) * perLeve;
@@ -276,15 +291,16 @@ export function Crafting() {
           <ol className="relative space-y-3 border-l-2 border-lavender-200/70 pl-5 dark:border-white/10">
             {craftRoute.map((l) => {
               const r = l.required[0];
-              const done = level > l.level + 4;
-              const here = level >= l.level && level <= l.level + 4;
+              const lv = craftLvlOf(l); // level you can actually craft it
+              const done = level > lv + 4;
+              const here = level >= lv && level <= lv + 4;
               return (
-                <li key={l.level} className="relative">
+                <li key={lv} className="relative">
                   <span className={clsx("absolute -left-[30px] grid h-6 w-6 place-items-center rounded-full text-[10px] font-bold", done ? "bg-emerald-400 text-white" : here ? "bg-gold-400 text-gold-900" : "bg-lavender-400 text-white")}>
-                    {done ? "✓" : l.level}
+                    {done ? "✓" : lv}
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="chip bg-lavender-100 text-lavender-700 ring-lavender-200 dark:bg-white/10 dark:text-lavender-200">Lv {l.level}</span>
+                    <span className="chip bg-lavender-100 text-lavender-700 ring-lavender-200 dark:bg-white/10 dark:text-lavender-200">Lv {lv}</span>
                     <button
                       onClick={() => market.openItem(r.id, r.name)}
                       className="font-semibold text-slate-800 underline-offset-2 hover:underline dark:text-slate-100"
@@ -309,6 +325,7 @@ export function Crafting() {
                   )}
                   <div className="mt-0.5 text-[11px] text-slate-400">
                     turn in to {l.levemete} · {l.issueZone}
+                    {l.level !== lv ? ` · from the Lv ${l.level} leve` : ""}
                   </div>
                 </li>
               );

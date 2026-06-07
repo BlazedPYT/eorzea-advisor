@@ -29,6 +29,7 @@ interface Leve {
     id: number;
     name: string;
     count: number;
+    craftLevel?: number | null;
     ingredients?: { id: number; name: string; amount: number }[];
   }[];
   repeats: number;
@@ -232,6 +233,11 @@ export function Leves() {
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                           🛠️ Craft {r.count}× {r.name}
+                          {r.craftLevel ? (
+                            <span className="ml-1 text-[11px] font-normal text-amber-700/80 dark:text-amber-300/80">
+                              (craftable at Lv {r.craftLevel})
+                            </span>
+                          ) : null}
                         </span>
                         <button
                           onClick={() => market.openItem(r.id, r.name)}

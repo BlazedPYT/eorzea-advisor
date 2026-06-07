@@ -97,11 +97,12 @@ async function main() {
   for (const v of Object.values(reqByData)) for (const it of v.required) leveItemIds.add(it.id);
   console.log(`Resolving recipes for ${leveItemIds.size} leve items…`);
   const ingByResult = {};
+  const craftLevelByResult = {}; // item id -> level you can actually craft it
   let rAfter = null;
   for (let page = 0; page < 40; page++) {
     const ap = rAfter == null ? "" : `&after=${rAfter}`;
     const d = await getJson(
-      `${XIV}/sheet/Recipe?limit=500${ap}&fields=ItemResult@as(raw),Ingredient@as(raw),AmountIngredient`
+      `${XIV}/sheet/Recipe?limit=500${ap}&fields=ItemResult@as(raw),Ingredient@as(raw),AmountIngredient,RecipeLevelTable.ClassJobLevel`
     );
     const rows = d.rows || [];
     if (!rows.length) break;
@@ -115,6 +116,8 @@ async function main() {
         if (ids[j] > 0 && amts[j] > 0) ing.push({ id: ids[j], amount: amts[j] });
       }
       ingByResult[rid] = ing;
+      const cl = r.fields.RecipeLevelTable?.fields?.ClassJobLevel;
+      if (cl) craftLevelByResult[rid] = cl;
     }
     rAfter = rows[rows.length - 1].row_id;
   }
@@ -126,9 +129,10 @@ async function main() {
     const d = await getJson(`${XIV}/sheet/Item?rows=${chunk.join(",")}&fields=Name`);
     for (const r of d.rows || []) nameById[r.row_id] = r.fields.Name;
   }
-  // attach ingredients onto each required item
+  // attach ingredients + real craft level onto each required item
   for (const v of Object.values(reqByData)) {
     for (const it of v.required) {
+      it.craftLevel = craftLevelByResult[it.id] || null;
       it.ingredients = (ingByResult[it.id] || []).map((g) => ({
         id: g.id,
         name: nameById[g.id] || `#${g.id}`,
