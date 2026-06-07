@@ -51,6 +51,7 @@ export function Mounts() {
   const [src, setSrc] = useState("");
   const [sort, setSort] = useState("default");
   const [prices, setPrices] = useState<Record<number, { cheapest?: number; world?: string }>>({});
+  const [limit, setLimit] = useState(60);
   const [open, setOpen] = useState<Coll | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
@@ -127,6 +128,9 @@ export function Mounts() {
     })();
   }, [data, kind, settings.homeWorld]);
 
+  // Reset how many are shown whenever the list/filters change.
+  useEffect(() => setLimit(60), [kind, q, src, sort]);
+
   const sourceTypes = useMemo(() => {
     const s = new Set<string>();
     for (const m of data) for (const so of m.sources) s.add(so.type);
@@ -195,14 +199,14 @@ export function Mounts() {
           </select>
         </div>
         <div className="text-xs text-slate-400">
-          {loading ? "Loading…" : `${filtered.length.toLocaleString()} ${kind} · showing first ${Math.min(filtered.length, 120)}`}
+          {loading ? "Loading…" : `${filtered.length.toLocaleString()} ${kind} · showing ${Math.min(filtered.length, limit)}`}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {loading
           ? Array.from({ length: 6 }).map((_, i) => <div key={i} className="glass shimmer h-28" />)
-          : filtered.slice(0, 120).map((m, i) => (
+          : filtered.slice(0, limit).map((m, i) => (
               <motion.button
                 key={m.id}
                 type="button"
@@ -259,6 +263,18 @@ export function Mounts() {
           <p className="col-span-full py-6 text-center text-sm text-slate-400">No {kind} match those filters.</p>
         )}
       </div>
+
+      {/* load more / show all */}
+      {!loading && filtered.length > limit && (
+        <div className="flex items-center justify-center gap-2">
+          <button onClick={() => setLimit((l) => l + 60)} className="btn-primary">
+            Load more ({filtered.length - limit} more)
+          </button>
+          <button onClick={() => setLimit(filtered.length)} className="btn-ghost">
+            Show all {filtered.length}
+          </button>
+        </div>
+      )}
 
       {/* detail: big image + in-app video */}
       <AnimatePresence>

@@ -85,6 +85,7 @@ export function Leves() {
   const [bracket, setBracket] = useState(0);
   const [q, setQ] = useState("");
   const [best, setBest] = useState(false);
+  const [limit, setLimit] = useState(80);
   const [open, setOpen] = useState<Leve | null>(null);
   const [currentMapId, setCurrentMapId] = useState<number | "">("");
 
@@ -120,6 +121,9 @@ export function Leves() {
     }
     return out;
   }, [leves, cat, type, br, q, best]);
+
+  // reset how many rows show when filters change
+  useEffect(() => setLimit(80), [cat, type, bracket, q, best]);
 
   return (
     <section className="space-y-3">
@@ -313,10 +317,10 @@ export function Leves() {
         ) : (
           <>
             <div className="px-2 py-1 text-xs text-slate-400">
-              {filtered.length.toLocaleString()} leve{filtered.length === 1 ? "" : "s"} · showing first {Math.min(filtered.length, 80)}
+              {filtered.length.toLocaleString()} leve{filtered.length === 1 ? "" : "s"} · showing {Math.min(filtered.length, limit)}
             </div>
             <ul className="max-h-[28rem] space-y-1 overflow-auto pr-1">
-              {filtered.slice(0, 80).map((l, i) => (
+              {filtered.slice(0, limit).map((l, i) => (
                 <li key={l.id}>
                   <button
                     onClick={() => { setOpen(l); setCurrentMapId(""); }}
@@ -341,6 +345,16 @@ export function Leves() {
               ))}
               {filtered.length === 0 && <li className="px-3 py-4 text-center text-sm text-slate-400">No leves match those filters.</li>}
             </ul>
+            {filtered.length > limit && (
+              <div className="flex items-center justify-center gap-2 p-2">
+                <button onClick={() => setLimit((l) => l + 80)} className="btn-primary !py-1.5 text-xs">
+                  Load more ({filtered.length - limit} more)
+                </button>
+                <button onClick={() => setLimit(filtered.length)} className="btn-ghost !py-1.5 text-xs">
+                  Show all {filtered.length}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
