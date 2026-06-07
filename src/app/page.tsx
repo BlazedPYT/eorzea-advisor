@@ -224,7 +224,7 @@ export default function Home() {
 
       <footer className="mt-16 border-t border-lavender-200/50 pt-6 text-center text-xs text-slate-400 dark:border-white/10">
         <p className="font-display text-sm font-bold text-lavender-600 dark:text-lavender-300">
-          Eorzea Advisor — created by Daniel Cody · Founder 💜
+          Eorzea Advisor — created by Daniel · Founder 💜
         </p>
         <p className="mt-2">
           Reads only public Lodestone pages, XIVAPI static game data, and Universalis
