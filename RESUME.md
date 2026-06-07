@@ -3,9 +3,9 @@
 _Snapshot for restarting your computer. Everything below is committed & pushed —
 nothing is lost on restart._
 
-## Where things stand (as of v1.12.0)
+## Where things stand (as of v1.13.0)
 - **Project:** `C:\Users\dcmlk\OneDrive\Desktop\FFXIV Eorzea Advisor`
-- **Current version:** `1.12.0` — committed, pushed to `main`, and **published** as the
+- **Current version:** `1.13.0` — committed, pushed to `main`, and **published** as the
   latest GitHub release. Local = remote (clean tree).
 - **GitHub repo:** https://github.com/BlazedPYT/eorzea-advisor (public)
 - **App:** Next.js 14 + Electron desktop app + web build. "Eorzea Advisor" — a cozy
@@ -17,7 +17,10 @@ nothing is lost on restart._
 - **Market Board**: item search (icons), cross-world cheapest, sale velocity, tax;
   **Marketplace settings** (home world, language, timezone, include-tax, hide-cents, left-nav)
 - **Daily/weekly checklist** + **live reset clocks** (daily 15:00 UTC, weekly Tue 08:00 UTC)
-- **Locator**: search any monster/NPC/vendor → zone map with ✕ + travel directions
+- **Locator**: search any monster/NPC/vendor → zone map with ✕ + travel directions;
+  **community pins** — for spawns we don't have coords for, players tap the map to pin
+  the spot (saved locally + instant) and **Submit to the project** opens a pre-filled
+  GitHub issue with a ready-to-merge `entries.json` snippet (label `coords`)
 - **Leves**: all 1,757; filters, EXP/allowance "best for leveling", required items +
   materials with Market Board links, real craft levels
 - **Crafting**: 11 jobs, EXP-to-next, best method + full route, **craft-by-level route**,

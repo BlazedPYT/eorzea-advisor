@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 // The localStorage keys that make up a user's saved state.
-const KEYS = ["ea-profile", "ea-market-settings-v1", "ea-checklist-v1", "ea-theme"];
+const KEYS = ["ea-profile", "ea-market-settings-v1", "ea-checklist-v1", "ea-theme", "ea-coord-submissions-v1"];
 const PREFIX = "EA1-";
 
 function makeCode(): string {
