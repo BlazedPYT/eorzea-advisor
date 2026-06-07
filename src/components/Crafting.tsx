@@ -29,6 +29,9 @@ export function Crafting() {
   const [level, setLevel] = useState(1);
   const [exp, setExp] = useState<number[]>([]);
   const [leves, setLeves] = useState<LeveLite[]>([]);
+  const [matMin, setMatMin] = useState(1);
+  const [matMax, setMatMax] = useState(50);
+  const [perLeve, setPerLeve] = useState(1);
 
   useEffect(() => {
     fetch("/crafting/exp.json").then((r) => r.json()).then(setExp).catch(() => {});
@@ -57,6 +60,32 @@ export function Crafting() {
     for (const l of mine) if (!byLevel.has(l.level)) byLevel.set(l.level, l);
     return Array.from(byLevel.values());
   }, [leves, job]);
+
+  // Aggregated shopping list: total materials to craft the recommended leve
+  // items across the selected level range (× how many times you do each leve).
+  const matTotals = useMemo(() => {
+    const mats = new Map<number, { name: string; qty: number }>();
+    const crystals = new Map<number, { name: string; qty: number }>();
+    let crafts = 0;
+    for (const l of craftRoute) {
+      if (l.level < matMin || l.level > matMax) continue;
+      for (const r of l.required) {
+        crafts += 1;
+        const times = (r.count || 1) * perLeve;
+        for (const g of r.ingredients || []) {
+          const bucket = g.id < 20 ? crystals : mats; // ids 2–19 are shards/crystals/clusters
+          const cur = bucket.get(g.id) || { name: g.name, qty: 0 };
+          cur.qty += g.amount * times;
+          bucket.set(g.id, cur);
+        }
+      }
+    }
+    const toArr = (m: Map<number, { name: string; qty: number }>) =>
+      Array.from(m.entries())
+        .map(([id, v]) => ({ id, ...v }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    return { mats: toArr(mats), crystals: toArr(crystals), crafts };
+  }, [craftRoute, matMin, matMax, perLeve]);
 
   return (
     <section className="space-y-3">
@@ -166,6 +195,71 @@ export function Crafting() {
           <div className="mt-1 font-display text-lg font-bold text-slate-800 dark:text-slate-100">{best.name}</div>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{best.detail}</p>
         </motion.div>
+      )}
+
+      {/* total materials for a level range (shopping list) */}
+      {craftRoute.length > 0 && (
+        <div className="glass p-4">
+          <h4 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-200">
+            🧾 Total materials for a level range
+            <InfoTip text="Adds up every material needed to craft the recommended leve items across the levels you choose — a ready shopping list. Tap any material to see its live Market Board price. Crystals/shards are listed separately." />
+          </h4>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-sm text-slate-600 dark:text-slate-300">Levels</span>
+            <select className="field !w-auto" value={matMin} onChange={(e) => setMatMin(Number(e.target.value))}>
+              {Array.from({ length: 100 }, (_, i) => i + 1).map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+            <span className="text-slate-400">→</span>
+            <select className="field !w-auto" value={matMax} onChange={(e) => setMatMax(Number(e.target.value))}>
+              {Array.from({ length: 100 }, (_, i) => i + 1).map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+            <span className="ml-2 flex items-center gap-1 text-sm text-slate-600 dark:text-slate-300">
+              craft each ×
+              <select className="field !w-auto" value={perLeve} onChange={(e) => setPerLeve(Number(e.target.value))}>
+                {[1, 2, 3, 5, 10].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+              <InfoTip text="How many times you'll do each leve (you usually repeat them while leveling). Multiplies the whole shopping list." />
+            </span>
+          </div>
+
+          {matTotals.mats.length === 0 ? (
+            <p className="text-sm text-slate-400">No craftable leves in this range for {job.name}.</p>
+          ) : (
+            <>
+              <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-lavender-500/70">
+                Materials ({matTotals.mats.length})
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {matTotals.mats.map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => market.openItem(g.id, g.name)}
+                    className="rounded-lg bg-white/60 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-lavender-200/70 hover:bg-white dark:bg-white/10 dark:text-slate-200 dark:ring-white/10"
+                  >
+                    <span className="text-gold-600">{g.qty}×</span> {g.name} 🔎
+                  </button>
+                ))}
+              </div>
+              {matTotals.crystals.length > 0 && (
+                <>
+                  <div className="mb-1 mt-3 text-[11px] font-bold uppercase tracking-wide text-lavender-500/70">
+                    Crystals &amp; shards
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {matTotals.crystals.map((g) => (
+                      <span key={g.id} className="rounded-lg bg-sky-100/70 px-2.5 py-1 text-xs font-semibold text-sky-700 dark:bg-white/10 dark:text-sky-200">
+                        {g.qty}× {g.name}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+              <p className="mt-2 text-[11px] text-slate-400">
+                Covers the recommended leve craft at each level from {matMin} to {matMax}. Adjust the multiplier for how many times you repeat each leve.
+              </p>
+            </>
+          )}
+        </div>
       )}
 
       {/* craft-by-level route (DoH) */}

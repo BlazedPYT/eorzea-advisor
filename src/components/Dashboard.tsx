@@ -84,6 +84,7 @@ export function Dashboard({
 }) {
   const [tab, setTab] = useState<TabId>(GOAL_DEFAULT_TAB[profile.goal] ?? "leveling");
   const [query, setQuery] = useState("");
+  const [splitTab, setSplitTab] = useState<TabId | null>(null);
 
   const sections: Section[] = useMemo(
     () => [
@@ -264,7 +265,7 @@ export function Dashboard({
 
       {/* tab pills (hidden while searching) */}
       {!searching && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -280,6 +281,19 @@ export function Dashboard({
               {t.label}
             </button>
           ))}
+          <button
+            onClick={() => setSplitTab((s) => (s ? null : tab === "crafting" ? "macros" : "crafting"))}
+            className={clsx(
+              "ml-auto flex items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-semibold transition-all",
+              splitTab
+                ? "bg-gradient-to-r from-gold-400 to-gold-300 text-gold-900 shadow-soft"
+                : "bg-white/60 text-slate-600 ring-1 ring-inset ring-lavender-200/70 hover:bg-white dark:bg-white/5 dark:text-slate-200 dark:ring-white/10"
+            )}
+            title="Open a second panel side by side"
+          >
+            {splitTab ? "⊟ Close split" : "⊞ Split view"}
+            <InfoTip text="Open a second panel beside this one (e.g. Crafting + Macros, or Crafting + Market) so you can use two sections at once. Close it any time with ⊟ or the ✕." />
+          </button>
         </div>
       )}
 
@@ -297,21 +311,54 @@ export function Dashboard({
         </p>
       )}
 
-      {/* sections */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={searching ? `q:${q}` : tab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
-          className="space-y-6"
-        >
-          {visible.map((s) => (
-            <div key={s.id}>{s.node}</div>
-          ))}
-        </motion.div>
-      </AnimatePresence>
+      {/* sections — single column, or split into two panes */}
+      {splitTab && !searching ? (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="min-w-0 space-y-6">
+            {visible.map((s) => (
+              <div key={s.id}>{s.node}</div>
+            ))}
+          </div>
+          <div className="min-w-0 space-y-3">
+            <div className="glass flex items-center justify-between gap-2 p-2">
+              <select
+                value={splitTab}
+                onChange={(e) => setSplitTab(e.target.value as TabId)}
+                className="field !py-1.5 text-sm font-semibold"
+              >
+                {sections.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.emoji} {s.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setSplitTab(null)}
+                className="btn-ghost shrink-0 !rounded-xl !px-2.5 !py-1.5 text-sm"
+                title="Close this panel"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-6">{sections.find((s) => s.id === splitTab)?.node}</div>
+          </div>
+        </div>
+      ) : (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={searching ? `q:${q}` : tab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="space-y-6"
+          >
+            {visible.map((s) => (
+              <div key={s.id}>{s.node}</div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
+      )}
     </div>
   );
 }
