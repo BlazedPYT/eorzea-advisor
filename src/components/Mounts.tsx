@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { InfoTip } from "./InfoTip";
@@ -49,6 +49,8 @@ export function Mounts() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [src, setSrc] = useState("");
+  const [sort, setSort] = useState("default");
+  const [prices, setPrices] = useState<Record<number, { cheapest?: number; world?: string }>>({});
   const [open, setOpen] = useState<Coll | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
@@ -102,6 +104,29 @@ export function Mounts() {
 
   const data = cache[kind] ?? [];
 
+  // Batch-fetch cheapest prices for tradeable items so cards show price inline.
+  const pricedKey = useRef("");
+  useEffect(() => {
+    const key = `${kind}:${settings.homeWorld}`;
+    if (!data.length || pricedKey.current === key) return;
+    pricedKey.current = key;
+    setPrices({});
+    const ids = data.filter((m) => m.tradeable && m.itemId).map((m) => m.itemId as number);
+    const world = settings.homeWorld || "Aether";
+    (async () => {
+      for (let i = 0; i < ids.length; i += 100) {
+        const chunk = ids.slice(i, i + 100);
+        try {
+          const r = await fetch(`/api/universalis/prices?world=${encodeURIComponent(world)}&ids=${chunk.join(",")}`);
+          const d = await r.json();
+          setPrices((p) => ({ ...p, ...d.prices }));
+        } catch {
+          /* ignore */
+        }
+      }
+    })();
+  }, [data, kind, settings.homeWorld]);
+
   const sourceTypes = useMemo(() => {
     const s = new Set<string>();
     for (const m of data) for (const so of m.sources) s.add(so.type);
@@ -110,12 +135,19 @@ export function Mounts() {
 
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
-    return data.filter(
+    const out = data.filter(
       (m) =>
         (!ql || m.name.toLowerCase().includes(ql)) &&
         (!src || m.sources.some((s) => s.type === src))
     );
-  }, [data, q, src]);
+    const cheap = (m: Coll) => (m.itemId && prices[m.itemId]?.cheapest) || 0;
+    if (sort === "name-asc") out.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === "name-desc") out.sort((a, b) => b.name.localeCompare(a.name));
+    else if (sort === "price-asc")
+      out.sort((a, b) => (cheap(a) || Infinity) - (cheap(b) || Infinity));
+    else if (sort === "price-desc") out.sort((a, b) => cheap(b) - cheap(a));
+    return out;
+  }, [data, q, src, sort, prices]);
 
   return (
     <section className="space-y-3">
@@ -141,7 +173,7 @@ export function Mounts() {
             </button>
           ))}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           <input
             className="field"
             placeholder={`Search ${kind} by name…`}
@@ -153,6 +185,13 @@ export function Mounts() {
             {sourceTypes.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
+          </select>
+          <select className="field" value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="default">Sort: default</option>
+            <option value="name-asc">Name A → Z</option>
+            <option value="name-desc">Name Z → A</option>
+            <option value="price-asc">Price: low → high</option>
+            <option value="price-desc">Price: high → low</option>
           </select>
         </div>
         <div className="text-xs text-slate-400">
@@ -203,7 +242,16 @@ export function Mounts() {
                       <span className="text-[11px] text-slate-400">Source unknown</span>
                     )}
                   </div>
-                  {m.patch && <div className="mt-1 text-[10px] text-slate-400">patch {m.patch}</div>}
+                  {m.tradeable && m.itemId && (
+                    <div className="mt-1 text-[11px] font-semibold text-gold-600">
+                      💰{" "}
+                      {prices[m.itemId]?.cheapest
+                        ? `${fmt(prices[m.itemId].cheapest)} gil`
+                        : prices[m.itemId]
+                        ? "not listed"
+                        : "…"}
+                    </div>
+                  )}
                 </div>
               </motion.button>
             ))}
@@ -246,7 +294,6 @@ export function Mounts() {
                       </span>
                     ))}
                     {open.tradeable && <span className="chip bg-emerald-100 text-emerald-700 ring-emerald-200">💰 Market Board</span>}
-                    {open.patch && <span className="chip bg-slate-100 text-slate-500 ring-slate-200 dark:bg-white/10 dark:text-slate-300">patch {open.patch}</span>}
                   </div>
                 </div>
                 <button onClick={() => setOpen(null)} className="btn-ghost shrink-0 !rounded-full !px-3 !py-1.5">✕</button>
