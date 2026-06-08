@@ -3,7 +3,7 @@
 _Snapshot for restarting your computer. Everything below is committed & pushed —
 nothing is lost on restart._
 
-## Where things stand (as of v1.14.0)
+## Where things stand (as of v1.14.1)
 - **Project:** `C:\Users\dcmlk\OneDrive\Desktop\FFXIV Eorzea Advisor`
 - **Current version:** `1.14.0` — committed, pushed to `main`, and **published** as the
   latest GitHub release. Local = remote (clean tree).
@@ -37,7 +37,8 @@ nothing is lost on restart._
 - **Endgame (100+) section** (v1.14): tomestone gearing, raid→savage, extremes/unreal,
   relics & hunts, plus a weekly endgame checklist (auto-resets Tue 08:00 UTC).
 - **My Board** (v1.14): free-form, drag + resize dashboard (`react-grid-layout`) — pick
-  which sections show as panels, arrange them, layout saved per device.
+  which sections show as panels, arrange them, layout saved per device. Compaction is
+  off (`compactType={null}`) so panels stay exactly where you drop them (v1.14.1 fix).
 - **Desktop**: launcher, fixed port 47591 (persistent localStorage), single-instance,
   **auto-update** via GitHub Releases + GitHub Action on version tags
 

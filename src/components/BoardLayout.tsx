@@ -167,6 +167,10 @@ export function BoardLayout({ sections }: { sections: BoardSection[] }) {
             margin={[12, 12]}
             draggableHandle=".board-drag-handle"
             onLayoutChange={onLayoutChange}
+            // Free-form board: no vertical compaction, so a panel stays exactly
+            // where you drop it instead of snapping back up to close gaps.
+            compactType={null}
+            preventCollision={false}
             isBounded
           >
             {enabledSections.map((s, i) => (
