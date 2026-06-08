@@ -109,6 +109,22 @@ body {
   background: transparent;
 }
 
+/* react-grid-layout — themed drag placeholder + resize handle ("My Board") */
+.react-grid-item.react-grid-placeholder {
+  background: rgba(139, 102, 224, 0.25) !important;
+  border: 2px dashed rgba(139, 102, 224, 0.6);
+  border-radius: 1.25rem;
+  opacity: 1;
+}
+.react-grid-item > .react-resizable-handle::after {
+  border-right-color: rgba(139, 102, 224, 0.7);
+  border-bottom-color: rgba(139, 102, 224, 0.7);
+}
+.react-grid-item.react-draggable-dragging,
+.react-grid-item.resizing {
+  z-index: 30;
+}
+
 /* Loading shimmer */
 .shimmer {
   position: relative;

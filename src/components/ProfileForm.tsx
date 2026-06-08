@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type {
   CharacterProfile,
+  ExperienceTier,
   GearItem,
   GearSnapshotData,
   Goal,
@@ -16,6 +17,11 @@ import { Autocomplete, type SuggestItem } from "./Autocomplete";
 import { InfoTip } from "./InfoTip";
 import { ALL_SLOTS, SLOT_LABEL } from "@/lib/gear";
 import { getJob } from "@/lib/jobs";
+import {
+  EXPERIENCE_TIERS,
+  defaultExperienceForLevel,
+  tierMeta,
+} from "@/lib/experience";
 
 const MSQ_OPTIONS: { value: MsqStatus; label: string }[] = [
   { value: "NORMAL", label: "Normal progression" },
@@ -272,6 +278,34 @@ export function ProfileForm({
           </label>
           <LevelSelector value={p.level} onChange={(l) => set("level", l)} />
         </div>
+      </div>
+
+      {/* experience tier */}
+      <div className="glass !rounded-2xl !bg-white/40 p-4 dark:!bg-white/[0.03]">
+        <label className="label">
+          Experience level{" "}
+          <InfoTip text="How seasoned YOU are as a player — separate from your character's level. A level-90 newcomer and a veteran on a fresh alt get different advice. Leave it on Auto to follow your level, or override it. Beginners get extra explanations; Veterans get terser tips; Endgame opens the max-level (raids/relics) section." />
+        </label>
+        <select
+          className="field"
+          value={p.experience ?? "AUTO"}
+          onChange={(e) => {
+            const v = e.target.value;
+            set("experience", v === "AUTO" ? undefined : (v as ExperienceTier));
+          }}
+        >
+          <option value="AUTO">
+            ✨ Auto — from level (currently {tierMeta(defaultExperienceForLevel(p.level)).label})
+          </option>
+          {EXPERIENCE_TIERS.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.emoji} {t.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+          {tierMeta(p.experience ?? defaultExperienceForLevel(p.level)).blurb}
+        </p>
       </div>
 
       {/* story / goal / playstyle */}

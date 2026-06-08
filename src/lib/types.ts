@@ -125,6 +125,15 @@ export type Playstyle =
   | "SAFE_PRACTICE"
   | "DPS_OPTIMIZE";
 
+// How seasoned the *player* is (distinct from character level). Optional:
+// when unset, it's derived from the level. See lib/experience.ts.
+export type ExperienceTier =
+  | "BEGINNER"
+  | "INTERMEDIATE"
+  | "EXPERIENCED"
+  | "VETERAN"
+  | "ENDGAME";
+
 export interface CharacterProfile {
   id?: string;
   characterName: string;
@@ -137,6 +146,7 @@ export interface CharacterProfile {
   storySkipped: boolean;
   goal: Goal;
   playstyle: Playstyle;
+  experience?: ExperienceTier; // explicit override; else derived from level
   highestDungeon?: string;
   weaponItemLevel?: number;
   avgItemLevel?: number;
@@ -191,6 +201,7 @@ export interface LuxuryRec {
 export interface AdvisorResult {
   role: Role;
   bracketLabel: string;
+  experienceTier: ExperienceTier;
   estimatedItemLevel: number;
   whatNext: { headline: string; action: string; sub: string };
   gear: GearRecommendation[];

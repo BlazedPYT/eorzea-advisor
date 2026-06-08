@@ -3,9 +3,9 @@
 _Snapshot for restarting your computer. Everything below is committed & pushed —
 nothing is lost on restart._
 
-## Where things stand (as of v1.13.0)
+## Where things stand (as of v1.14.0)
 - **Project:** `C:\Users\dcmlk\OneDrive\Desktop\FFXIV Eorzea Advisor`
-- **Current version:** `1.13.0` — committed, pushed to `main`, and **published** as the
+- **Current version:** `1.14.0` — committed, pushed to `main`, and **published** as the
   latest GitHub release. Local = remote (clean tree).
 - **GitHub repo:** https://github.com/BlazedPYT/eorzea-advisor (public)
 - **App:** Next.js 14 + Electron desktop app + web build. "Eorzea Advisor" — a cozy
@@ -31,6 +31,13 @@ nothing is lost on restart._
 - **News**: live Lodestone headlines + maintenance highlight
 - **Dashboard**: searchable, tabbed, **split view**, dark mode, **backup codes**
   (export/import), **PWA** (installable + offline), **Share**, tab deep-links (`/#mounts`)
+- **Experience tiers** (v1.14): Beginner→Intermediate→Experienced→Veteran→Endgame, set
+  in the profile (level picks a default, user overrides). Drives tone/hand-holding
+  (veterans get a terser dashboard), the default tab, and what-next advice.
+- **Endgame (100+) section** (v1.14): tomestone gearing, raid→savage, extremes/unreal,
+  relics & hunts, plus a weekly endgame checklist (auto-resets Tue 08:00 UTC).
+- **My Board** (v1.14): free-form, drag + resize dashboard (`react-grid-layout`) — pick
+  which sections show as panels, arrange them, layout saved per device.
 - **Desktop**: launcher, fixed port 47591 (persistent localStorage), single-instance,
   **auto-update** via GitHub Releases + GitHub Action on version tags
 

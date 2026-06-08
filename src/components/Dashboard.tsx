@@ -15,7 +15,10 @@ import { Crafting } from "./Crafting";
 import { Mounts } from "./Mounts";
 import { MacroGenerator } from "./MacroGenerator";
 import { News } from "./News";
+import { Endgame } from "./Endgame";
+import { BoardLayout } from "./BoardLayout";
 import { InfoTip } from "./InfoTip";
+import { resolveExperience, showHandHolding } from "@/lib/experience";
 import {
   FoodReminder,
   GilWarnings,
@@ -26,6 +29,7 @@ import {
 
 type TabId =
   | "all"
+  | "board"
   | "dailies"
   | "locator"
   | "leves"
@@ -37,7 +41,8 @@ type TabId =
   | "market"
   | "food"
   | "gil"
-  | "luxury";
+  | "luxury"
+  | "endgame";
 
 interface Section {
   id: Exclude<TabId, "all">;
@@ -85,12 +90,16 @@ export function Dashboard({
   gear: GearItem[];
   advice: AdvisorResult;
 }) {
-  const VALID_TABS: TabId[] = ["all", "dailies", "locator", "leves", "crafting", "macros", "news", "gear", "leveling", "market", "food", "gil", "luxury"];
+  const VALID_TABS: TabId[] = ["all", "board", "dailies", "locator", "leves", "crafting", "macros", "news", "gear", "leveling", "market", "food", "gil", "luxury", "endgame"];
+  const tier = resolveExperience(profile);
+  const handHolding = showHandHolding(tier);
   const initialTab = (): TabId => {
     if (typeof window !== "undefined") {
       const h = window.location.hash.replace("#", "") as TabId;
       if (VALID_TABS.includes(h)) return h;
     }
+    // Endgame players land on the Endgame tab; everyone else follows their goal.
+    if (tier === "ENDGAME") return "endgame";
     return GOAL_DEFAULT_TAB[profile.goal] ?? "leveling";
   };
   const [tab, setTab] = useState<TabId>(initialTab);
@@ -220,6 +229,14 @@ export function Dashboard({
           </div>
         ),
       },
+      {
+        id: "endgame",
+        label: "Endgame",
+        emoji: "🔥",
+        blurb: "Max-level loop: tomestone gearing, raid→savage, extremes, relics & hunts.",
+        keywords: ["endgame", "100", "max", "savage", "raid", "ultimate", "extreme", "unreal", "relic", "tomestone", "hunt", "bis", "prog", "lockout"],
+        node: <Endgame profile={profile} />,
+      },
     ],
     [profile, gear, advice]
   );
@@ -242,6 +259,7 @@ export function Dashboard({
 
   const tabs: { id: TabId; label: string; emoji: string }[] = [
     { id: "all", label: "Everything", emoji: "✨" },
+    { id: "board", label: "My Board", emoji: "🧩" },
     ...sections.map((s) => ({ id: s.id as TabId, label: s.label, emoji: s.emoji })),
   ];
 
@@ -275,8 +293,8 @@ export function Dashboard({
           )}
         </div>
 
-        {/* quick novice questions */}
-        {!searching && (
+        {/* quick novice questions (hidden for seasoned players) */}
+        {!searching && handHolding && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {QUICK_QUESTIONS.map((qq) => (
               <button
@@ -309,26 +327,34 @@ export function Dashboard({
               {t.label}
             </button>
           ))}
-          <button
-            onClick={() => setSplitTab((s) => (s ? null : tab === "crafting" ? "macros" : "crafting"))}
-            className={clsx(
-              "ml-auto flex items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-semibold transition-all",
-              splitTab
-                ? "bg-gradient-to-r from-gold-400 to-gold-300 text-gold-900 shadow-soft"
-                : "bg-white/60 text-slate-600 ring-1 ring-inset ring-lavender-200/70 hover:bg-white dark:bg-white/5 dark:text-slate-200 dark:ring-white/10"
-            )}
-            title="Open a second panel side by side"
-          >
-            {splitTab ? "⊟ Close split" : "⊞ Split view"}
-            <InfoTip text="Open a second panel beside this one (e.g. Crafting + Macros, or Crafting + Market) so you can use two sections at once. Close it any time with ⊟ or the ✕." />
-          </button>
+          {tab !== "board" && (
+            <button
+              onClick={() => setSplitTab((s) => (s ? null : tab === "crafting" ? "macros" : "crafting"))}
+              className={clsx(
+                "ml-auto flex items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-semibold transition-all",
+                splitTab
+                  ? "bg-gradient-to-r from-gold-400 to-gold-300 text-gold-900 shadow-soft"
+                  : "bg-white/60 text-slate-600 ring-1 ring-inset ring-lavender-200/70 hover:bg-white dark:bg-white/5 dark:text-slate-200 dark:ring-white/10"
+              )}
+              title="Open a second panel side by side"
+            >
+              {splitTab ? "⊟ Close split" : "⊞ Split view"}
+              <InfoTip text="Open a second panel beside this one (e.g. Crafting + Macros, or Crafting + Market) so you can use two sections at once. Close it any time with ⊟ or the ✕." />
+            </button>
+          )}
         </div>
       )}
 
-      {/* helper line for the active tab */}
-      {activeSection && (
+      {/* helper line for the active tab (hidden for seasoned players) */}
+      {activeSection && handHolding && (
         <p className="px-1 text-sm text-slate-500 dark:text-slate-400">
           {activeSection.emoji} {activeSection.blurb}
+        </p>
+      )}
+      {tab === "board" && !searching && (
+        <p className="px-1 text-sm text-slate-500 dark:text-slate-400">
+          🧩 Your custom dashboard — drag panels by their title bar, resize from the
+          corner, and add/remove panels with the chips above.
         </p>
       )}
       {searching && (
@@ -339,8 +365,10 @@ export function Dashboard({
         </p>
       )}
 
-      {/* sections — single column, or split into two panes */}
-      {splitTab && !searching ? (
+      {/* sections — board grid, single column, or split into two panes */}
+      {tab === "board" && !searching ? (
+        <BoardLayout sections={sections} />
+      ) : splitTab && !searching ? (
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="min-w-0 space-y-6">
             {visible.map((s) => (

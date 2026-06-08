@@ -4,6 +4,7 @@ import type { CharacterProfile } from "@/lib/types";
 import { getJob, ROLE_LABEL, ROLE_EMOJI } from "@/lib/jobs";
 import { storyLabel } from "@/lib/advisor";
 import { bracketForLevel } from "@/lib/brackets";
+import { resolveExperience, tierMeta } from "@/lib/experience";
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
@@ -33,6 +34,7 @@ export function CharacterCard({
 }) {
   const job = getJob(profile.job);
   const bracket = bracketForLevel(profile.level);
+  const tier = tierMeta(resolveExperience(profile));
 
   return (
     <div className="glass relative overflow-hidden p-5 sm:p-6">
@@ -61,6 +63,12 @@ export function CharacterCard({
               <span>Lv {profile.level}</span>
               <span className="chip bg-lavender-100 text-lavender-700 ring-lavender-200 dark:bg-white/10 dark:text-lavender-200">
                 {ROLE_EMOJI[job.role]} {ROLE_LABEL[job.role]}
+              </span>
+              <span
+                className="chip bg-gold-100 text-gold-700 ring-gold-200 dark:bg-gold-400/10 dark:text-gold-300"
+                title={tier.blurb}
+              >
+                {tier.emoji} {tier.label}
               </span>
             </div>
           </div>

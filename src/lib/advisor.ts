@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import { getJob, ROLE_LABEL } from "./jobs";
 import { bracketForLevel, estimateItemLevel } from "./brackets";
+import { resolveExperience } from "./experience";
 import {
   LEVELING_DUNGEONS,
   highestDungeonForLevel,
@@ -323,6 +324,7 @@ function buildWhatNext(p: CharacterProfile): AdvisorResult["whatNext"] {
   const highest = highestDungeonForLevel(p.level);
   const b = bracketForLevel(p.level);
   const { ahead, gate } = storyAheadOfLevel(p);
+  const tier = resolveExperience(p);
 
   if (job.isLimited) {
     return {
@@ -340,11 +342,20 @@ function buildWhatNext(p: CharacterProfile): AdvisorResult["whatNext"] {
     };
   }
 
+  if (tier === "ENDGAME") {
+    return {
+      headline: "Push the current tier",
+      action:
+        "Cap your weekly tomestones, clear the latest Savage/Extreme, and chip away at your relic between lockouts.",
+      sub: "See the Endgame tab for the full max-level loop, gearing path and weekly targets.",
+    };
+  }
+
   if (p.level >= 100) {
     return {
       headline: "Run Expert + daily roulettes",
       action: "Grind current Tomestones and dungeon/raid drops to gear up at 100.",
-      sub: "You're at max level — switch from leveling to endgame gearing.",
+      sub: "You're at max level — switch from leveling to endgame gearing. Mark yourself ‘Endgame’ for raid/relic guidance.",
     };
   }
 
@@ -388,6 +399,7 @@ export function buildAdvice(p: CharacterProfile): AdvisorResult {
   return {
     role: job.role,
     bracketLabel: b.label,
+    experienceTier: resolveExperience(p),
     estimatedItemLevel: estIl,
     whatNext: buildWhatNext(p),
     gear: [], // filled by the gear API route (needs network)
